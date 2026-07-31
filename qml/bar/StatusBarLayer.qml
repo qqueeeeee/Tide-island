@@ -31,6 +31,8 @@ Item {
     property int batteryCapacity: -1
     property bool isCharging: false
     property bool isMuted: false
+    property bool recordingActive: false
+    property string recordingElapsedText: ""
 
     property string textFontFamily: userConfig.textFontFamily
     property string timeFontFamily: userConfig.timeFontFamily
@@ -41,6 +43,7 @@ Item {
     property bool activeWindowEnabled: userConfig.statusBarShowActiveWindow
     property bool statusIconsEnabled: userConfig.statusBarShowStatusIcons
     property bool clockEnabled: userConfig.statusBarShowClock
+    property bool recordingPillEnabled: userConfig.statusBarShowRecordingPill
 
     signal workspaceFocusRequested(int workspaceId)
     signal statusClusterActivated()
@@ -137,6 +140,14 @@ Item {
         }
         Behavior on x {
             NumberAnimation { duration: 260; easing.type: Easing.OutCubic }
+        }
+
+        Bar.BarRecordingPill {
+            visible: root.recordingPillEnabled && root.recordingActive
+            anchors.verticalCenter: parent.verticalCenter
+            textFontFamily: root.timeFontFamily
+            pixelSize: Math.max(11, root.userConfig.bodyFontSize - 2)
+            elapsedText: root.recordingElapsedText
         }
 
         Bar.BarStatusCluster {

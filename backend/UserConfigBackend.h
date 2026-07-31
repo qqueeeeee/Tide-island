@@ -69,6 +69,15 @@ class UserConfigBackend final : public QObject {
     Q_PROPERTY(bool statusBarShowClock READ statusBarShowClock NOTIFY statusBarShowClockChanged FINAL)
     Q_PROPERTY(bool statusBarShowDateOnHover READ statusBarShowDateOnHover NOTIFY statusBarShowDateOnHoverChanged FINAL)
     Q_PROPERTY(bool statusBarFadeWithIsland READ statusBarFadeWithIsland NOTIFY statusBarFadeWithIslandChanged FINAL)
+    Q_PROPERTY(bool statusBarShowRecordingPill READ statusBarShowRecordingPill NOTIFY statusBarShowRecordingPillChanged FINAL)
+    Q_PROPERTY(QString captureVideoDirectory READ captureVideoDirectory NOTIFY captureVideoDirectoryChanged FINAL)
+    Q_PROPERTY(QString captureScreenshotDirectory READ captureScreenshotDirectory NOTIFY captureScreenshotDirectoryChanged FINAL)
+    Q_PROPERTY(QString captureAnnotationTool READ captureAnnotationTool NOTIFY captureAnnotationToolChanged FINAL)
+    Q_PROPERTY(bool captureRecordAudio READ captureRecordAudio NOTIFY captureRecordAudioChanged FINAL)
+    Q_PROPERTY(bool captureCopyToClipboard READ captureCopyToClipboard NOTIFY captureCopyToClipboardChanged FINAL)
+    Q_PROPERTY(bool captureNotify READ captureNotify NOTIFY captureNotifyChanged FINAL)
+    Q_PROPERTY(bool captureShowScreenshotPreview READ captureShowScreenshotPreview NOTIFY captureShowScreenshotPreviewChanged FINAL)
+    Q_PROPERTY(int captureScreenshotPreviewSeconds READ captureScreenshotPreviewSeconds NOTIFY captureScreenshotPreviewSecondsChanged FINAL)
 
 public:
     explicit UserConfigBackend(QObject *parent = nullptr);
@@ -126,6 +135,15 @@ public:
     bool statusBarShowClock() const;
     bool statusBarShowDateOnHover() const;
     bool statusBarFadeWithIsland() const;
+    bool statusBarShowRecordingPill() const;
+    QString captureVideoDirectory() const;
+    QString captureScreenshotDirectory() const;
+    QString captureAnnotationTool() const;
+    bool captureRecordAudio() const;
+    bool captureCopyToClipboard() const;
+    bool captureNotify() const;
+    bool captureShowScreenshotPreview() const;
+    int captureScreenshotPreviewSeconds() const;
     void setDefaultWallpaperPath(const QString &path);
     void setDefaultTlpSudoPassword(const QString &password);
 
@@ -186,6 +204,15 @@ signals:
     void statusBarShowClockChanged();
     void statusBarShowDateOnHoverChanged();
     void statusBarFadeWithIslandChanged();
+    void statusBarShowRecordingPillChanged();
+    void captureVideoDirectoryChanged();
+    void captureScreenshotDirectoryChanged();
+    void captureAnnotationToolChanged();
+    void captureRecordAudioChanged();
+    void captureCopyToClipboardChanged();
+    void captureNotifyChanged();
+    void captureShowScreenshotPreviewChanged();
+    void captureScreenshotPreviewSecondsChanged();
 
 private:
     void scheduleReload();
@@ -246,6 +273,15 @@ private:
     bool m_statusBarShowClock = true;
     bool m_statusBarShowDateOnHover = true;
     bool m_statusBarFadeWithIsland = true;
+    bool m_statusBarShowRecordingPill = true;
+    QString m_captureVideoDirectory;
+    QString m_captureScreenshotDirectory;
+    QString m_captureAnnotationTool;
+    bool m_captureRecordAudio = true;
+    bool m_captureCopyToClipboard = true;
+    bool m_captureNotify = true;
+    bool m_captureShowScreenshotPreview = true;
+    int m_captureScreenshotPreviewSeconds = 6;
 
     QFileSystemWatcher m_watcher;
     QTimer m_reloadTimer;

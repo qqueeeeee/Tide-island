@@ -40,6 +40,8 @@ ApplicationWindow {
             return interactionPage
         case 6:
             return statusBarPage
+        case 7:
+            return capturePage
         default:
             return null
         }
@@ -277,6 +279,32 @@ ApplicationWindow {
             }
         }
 
+        Text{
+            id: captureButton
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 540
+            color: currentPage === 7 ? Theme.selectedColor : Theme.textColor
+            text: captureButtonText.width > mainSplitLine.x ? "C" : "Capture"
+            font.family: Theme.titleFontFamily
+            font.pixelSize: 23
+
+            TextMetrics {
+                id: captureButtonText
+                font: captureButton.font
+                text: "Capture"
+            }
+
+            Behavior on color {ColorAnimation{ duration:Theme.animationDuration}}
+
+            MouseArea{
+                anchors.fill:parent
+
+                onClicked: {
+                    selectPage(7)
+                }
+            }
+        }
+
         Text {
             id: appearanceButton
 
@@ -351,6 +379,13 @@ ApplicationWindow {
 
         StatusBar {
             id: statusBarPage
+            anchors.fill: parent
+            visible: false
+            opacity: 0
+        }
+
+        CaptureSettings {
+            id: capturePage
             anchors.fill: parent
             visible: false
             opacity: 0

@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import IslandBackend
+import "qml/common"
 
 Scope {
     id: shellRoot
@@ -13,6 +14,25 @@ Scope {
     property bool islandAutoHideRuntimeEnabled: true
 
     readonly property var userConfig: UserConfig
+    readonly property var captureController: captureBackend
+
+    CaptureController {
+        id: captureBackend
+
+        onScreenshotCaptured: function(path) {
+            shellRoot.forFocusedWindow((window) => {
+                if (window && window.showCaptureScreenshotWindow)
+                    window.showCaptureScreenshotWindow(path);
+            });
+        }
+
+        onScreenshotDismissed: {
+            shellRoot.forEachWindow((window) => {
+                if (window && window.dismissCaptureScreenshotWindow)
+                    window.dismissCaptureScreenshotWindow();
+            });
+        }
+    }
 
     function forEachWindow(callback) {
         const windows = panelVariants.instances ? panelVariants.instances : [];
@@ -249,6 +269,42 @@ Scope {
 
         function toggleApplicationLauncher() {
             shellRoot.forFocusedWindow((window) => window.toggleApplicationLauncherWindow());
+        }
+    }
+
+    IpcHandler {
+        target: "capture"
+
+        function screenshot() {
+            captureBackend.takeScreenshot("area");
+        }
+
+        function screenshotArea() {
+            captureBackend.takeScreenshot("area");
+        }
+
+        function screenshotScreen() {
+            captureBackend.takeScreenshot("screen");
+        }
+
+        function record() {
+            captureBackend.startRecording(false);
+        }
+
+        function recordArea() {
+            captureBackend.startRecording(true);
+        }
+
+        function stopRecording() {
+            captureBackend.stopRecording();
+        }
+
+        function toggleRecording() {
+            captureBackend.toggleRecording(false);
+        }
+
+        function toggleRecordingArea() {
+            captureBackend.toggleRecording(true);
         }
     }
 

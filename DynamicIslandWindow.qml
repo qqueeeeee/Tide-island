@@ -54,6 +54,17 @@ PanelWindow {
         && shellRootController.screenRecordingActive !== undefined
         ? !!shellRootController.screenRecordingActive
         : false
+    readonly property var captureController: shellRootController
+        && shellRootController.captureController
+        ? shellRootController.captureController
+        : null
+    readonly property bool captureRecordingActive: captureController
+        ? !!captureController.recording
+        : false
+    readonly property string captureElapsedText: captureController
+        ? String(captureController.elapsedText)
+        : ""
+    property string captureScreenshotPath: ""
     property bool autoHideVisible: false
     property bool autoHidePointerInside: false
     property bool autoHideForcedHidden: false
@@ -553,6 +564,57 @@ PanelWindow {
             prewarmWallpaperCache();
     }
 
+    function toggleCaptureRecordingWindow(region) {
+        if (root.captureController)
+            root.captureController.toggleRecording(region === true);
+    }
+
+    function captureScreenshotWindow(mode) {
+        if (root.captureController)
+            root.captureController.takeScreenshot(mode);
+    }
+
+    function showCaptureScreenshotWindow(filePath) {
+        if (!root.userConfig.captureShowScreenshotPreview)
+            return;
+
+        root.captureScreenshotPath = filePath === undefined || filePath === null ? "" : String(filePath);
+        if (root.captureScreenshotPath === "")
+            return;
+
+        showAutoHiddenIsland("state");
+        islandContainer.showCaptureScreenshot();
+        captureScreenshotDismissTimer.restart();
+    }
+
+    function dismissCaptureScreenshotWindow() {
+        captureScreenshotDismissTimer.stop();
+        root.captureScreenshotPath = "";
+        if (islandContainer.islandState === "capture_screenshot")
+            islandContainer.smartRestoreState();
+        scheduleAutoHide();
+    }
+
+    function refreshCaptureRecordingWindow() {
+        if (root.captureRecordingActive) {
+            showAutoHiddenIsland("state");
+            islandContainer.showCaptureRecording();
+        } else if (islandContainer.islandState === "capture_recording") {
+            islandContainer.smartRestoreState();
+            scheduleAutoHide();
+        }
+    }
+
+    onCaptureRecordingActiveChanged: root.refreshCaptureRecordingWindow()
+
+    Timer {
+        id: captureScreenshotDismissTimer
+
+        interval: Math.max(2, root.userConfig.captureScreenshotPreviewSeconds) * 1000
+        repeat: false
+        onTriggered: root.dismissCaptureScreenshotWindow()
+    }
+
     function showNotification(appName, summary, body) {
         islandContainer.showNotificationCapsule(appName, summary, body);
     }
@@ -836,7 +898,9 @@ PanelWindow {
         readonly property bool timerBubbleWanted: (timerActive && timerRemainingSeconds > 0 || timerCompletionAnimating)
             && !root.overviewVisible
             && (islandState === "normal" || islandState === "lyrics" || islandState === "custom")
-        readonly property bool blocksTransientSplit: islandState === "expanded"
+        readonly property bool blocksTransientSplit: islandState === "capture_recording"
+            || islandState === "capture_screenshot"
+            || islandState === "expanded"
             || islandState === "bluetooth_expanded"
             || islandState === "control_center"
             || islandState === "notification"
@@ -880,6 +944,8 @@ PanelWindow {
         )
         readonly property bool expandedLayerVisible: !root.overviewVisible && islandState === "expanded"
         readonly property bool bluetoothExpandedLayerVisible: !root.overviewVisible && islandState === "bluetooth_expanded"
+        readonly property bool captureRecordingLayerVisible: !root.overviewVisible && islandState === "capture_recording"
+        readonly property bool captureScreenshotLayerVisible: !root.overviewVisible && islandState === "capture_screenshot"
         readonly property bool notificationLayerVisible: !root.overviewVisible && islandState === "notification"
         readonly property bool controlCenterLayerVisible: !root.overviewVisible && islandState === "control_center"
         readonly property bool notificationCenterLayerVisible: !root.overviewVisible && islandState === "notification_center"
@@ -1457,6 +1523,26 @@ PanelWindow {
 
         }
 
+        function showCaptureRecording() {
+            if (root.overviewVisible) return;
+
+            abortSideTransientMode();
+            clearTransientCapsule();
+            islandState = "capture_recording";
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+            stopAutoHideTimer();
+        }
+
+        function showCaptureScreenshot() {
+            if (root.overviewVisible) return;
+
+            abortSideTransientMode();
+            clearTransientCapsule();
+            islandState = "capture_screenshot";
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+            stopAutoHideTimer();
+        }
+
         function toggleNotificationExpansionIfNeeded() {
             if (islandState !== "notification" || !notificationLoader.item || !notificationLoader.item.hasOverflowContent)
                 return false;
@@ -1724,7 +1810,8 @@ PanelWindow {
             capsuleHeight: mainCapsule.height
             capsuleRestingWidth: root.userConfig.islandWidth
             revealProgress: root.autoHideProgress
-            islandBusy: islandContainer.islandState !== "normal" || root.overviewVisible
+            islandBusy: (islandContainer.islandState !== "normal"
+                && islandContainer.islandState !== "capture_recording") || root.overviewVisible
             currentWorkspace: islandContainer.currentWs
             workspaceIds: statusBarWorkspaceModelLoader.item
                 ? statusBarWorkspaceModelLoader.item.workspaceIds
@@ -1735,6 +1822,8 @@ PanelWindow {
             batteryCapacity: islandContainer.batteryCapacity
             isCharging: islandContainer.isCharging
             isMuted: islandContainer.isMuted
+            recordingActive: root.captureRecordingActive
+            recordingElapsedText: root.captureElapsedText
 
             onWorkspaceFocusRequested: function(workspaceId) {
                 const integration = hyprlandIntegrationLoader.item;
@@ -1772,6 +1861,10 @@ PanelWindow {
                 }
 
                 switch (islandContainer.islandState) {
+                case "capture_recording":
+                    return Math.max(userConfig.islandWidth, 200);
+                case "capture_screenshot":
+                    return 410;
                 case "split":
                     return islandContainer.splitCapsuleWidth;
                 case "long_capsule":
@@ -1804,6 +1897,8 @@ PanelWindow {
                 if (root.overviewVisible) return root.overviewCapsuleHeight;
 
                 switch (islandContainer.islandState) {
+                case "capture_screenshot":
+                    return 165;
                 case "control_center":
                     return 320 + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterExtraHeight : 32);
                 case "notification_center":
@@ -1826,6 +1921,8 @@ PanelWindow {
                 if (root.overviewVisible) return root.overviewCapsuleRadius;
 
                 switch (islandContainer.islandState) {
+                case "capture_screenshot":
+                    return 40;
                 case "control_center":
                     return 34;
                 case "notification_center":
@@ -2357,6 +2454,68 @@ PanelWindow {
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
                         showCondition: islandContainer.bluetoothExpandedLayerVisible
+                    }
+                }
+            }
+
+            Loader {
+                id: captureRecordingLoader
+                anchors.fill: parent
+                active: islandContainer.captureRecordingLayerVisible
+                asynchronous: false
+                visible: active
+
+                sourceComponent: Component {
+                    CaptureRecordingLayer {
+                        elapsedText: root.captureElapsedText
+                        textFontFamily: root.timeFontFamily
+                        showCondition: islandContainer.captureRecordingLayerVisible
+                        onStopRequested: {
+                            islandContainer.suppressCapsuleClick(true);
+                            if (root.captureController)
+                                root.captureController.stopRecording();
+                        }
+                    }
+                }
+            }
+
+            Loader {
+                id: captureScreenshotLoader
+                anchors.fill: parent
+                active: islandContainer.captureScreenshotLayerVisible
+                asynchronous: false
+                visible: active
+
+                sourceComponent: Component {
+                    CaptureShotLayer {
+                        filePath: root.captureScreenshotPath
+                        textFontFamily: root.textFontFamily
+                        heroFontFamily: root.heroFontFamily
+                        showCondition: islandContainer.captureScreenshotLayerVisible
+                        onCopyRequested: {
+                            islandContainer.suppressCapsuleClick(true);
+                            if (root.captureController)
+                                root.captureController.copyLastScreenshot();
+                        }
+                        onAnnotateRequested: {
+                            islandContainer.suppressCapsuleClick(true);
+                            if (root.captureController)
+                                root.captureController.annotateLastScreenshot();
+                            root.dismissCaptureScreenshotWindow();
+                        }
+                        onOpenRequested: {
+                            islandContainer.suppressCapsuleClick(true);
+                            if (root.captureController)
+                                root.captureController.openLastScreenshot();
+                            root.dismissCaptureScreenshotWindow();
+                        }
+                        onDeleteRequested: {
+                            islandContainer.suppressCapsuleClick(true);
+                            if (root.captureController)
+                                root.captureController.deleteLastScreenshot();
+                            root.dismissCaptureScreenshotWindow();
+                        }
+                        onDismissRequested: root.dismissCaptureScreenshotWindow()
                     }
                 }
             }

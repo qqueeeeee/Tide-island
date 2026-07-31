@@ -77,6 +77,7 @@ qt_add_qml_module(tide-island-config-app
         FontSettings.qml
         Interaction.qml
         StatusBar.qml
+        CaptureSettings.qml
         Shortcut.qml
         ApplicationLauncherSettings.qml
 )

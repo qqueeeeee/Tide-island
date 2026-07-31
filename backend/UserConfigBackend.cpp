@@ -366,6 +366,51 @@ bool UserConfigBackend::statusBarFadeWithIsland() const
     return m_statusBarFadeWithIsland;
 }
 
+bool UserConfigBackend::statusBarShowRecordingPill() const
+{
+    return m_statusBarShowRecordingPill;
+}
+
+QString UserConfigBackend::captureVideoDirectory() const
+{
+    return m_captureVideoDirectory;
+}
+
+QString UserConfigBackend::captureScreenshotDirectory() const
+{
+    return m_captureScreenshotDirectory;
+}
+
+QString UserConfigBackend::captureAnnotationTool() const
+{
+    return m_captureAnnotationTool;
+}
+
+bool UserConfigBackend::captureRecordAudio() const
+{
+    return m_captureRecordAudio;
+}
+
+bool UserConfigBackend::captureCopyToClipboard() const
+{
+    return m_captureCopyToClipboard;
+}
+
+bool UserConfigBackend::captureNotify() const
+{
+    return m_captureNotify;
+}
+
+bool UserConfigBackend::captureShowScreenshotPreview() const
+{
+    return m_captureShowScreenshotPreview;
+}
+
+int UserConfigBackend::captureScreenshotPreviewSeconds() const
+{
+    return m_captureScreenshotPreviewSeconds;
+}
+
 int UserConfigBackend::bodyFontSize() const
 {
     return m_bodyFontSize;
@@ -531,6 +576,15 @@ void UserConfigBackend::loadConfig()
     updateField(this, m_statusBarShowClock, jsonBool(configObject, QLatin1String("statusBarShowClock"), true), &UserConfigBackend::statusBarShowClockChanged);
     updateField(this, m_statusBarShowDateOnHover, jsonBool(configObject, QLatin1String("statusBarShowDateOnHover"), true), &UserConfigBackend::statusBarShowDateOnHoverChanged);
     updateField(this, m_statusBarFadeWithIsland, jsonBool(configObject, QLatin1String("statusBarFadeWithIsland"), true), &UserConfigBackend::statusBarFadeWithIslandChanged);
+    updateField(this, m_statusBarShowRecordingPill, jsonBool(configObject, QLatin1String("statusBarShowRecordingPill"), true), &UserConfigBackend::statusBarShowRecordingPillChanged);
+    updateField(this, m_captureVideoDirectory, jsonString(configObject, QLatin1String("captureVideoDirectory"), QString()), &UserConfigBackend::captureVideoDirectoryChanged);
+    updateField(this, m_captureScreenshotDirectory, jsonString(configObject, QLatin1String("captureScreenshotDirectory"), QString()), &UserConfigBackend::captureScreenshotDirectoryChanged);
+    updateField(this, m_captureAnnotationTool, jsonString(configObject, QLatin1String("captureAnnotationTool"), QString()), &UserConfigBackend::captureAnnotationToolChanged);
+    updateField(this, m_captureRecordAudio, jsonBool(configObject, QLatin1String("captureRecordAudio"), true), &UserConfigBackend::captureRecordAudioChanged);
+    updateField(this, m_captureCopyToClipboard, jsonBool(configObject, QLatin1String("captureCopyToClipboard"), true), &UserConfigBackend::captureCopyToClipboardChanged);
+    updateField(this, m_captureNotify, jsonBool(configObject, QLatin1String("captureNotify"), true), &UserConfigBackend::captureNotifyChanged);
+    updateField(this, m_captureShowScreenshotPreview, jsonBool(configObject, QLatin1String("captureShowScreenshotPreview"), true), &UserConfigBackend::captureShowScreenshotPreviewChanged);
+    updateField(this, m_captureScreenshotPreviewSeconds, jsonBoundedInt(configObject, QLatin1String("captureScreenshotPreviewSeconds"), 6, 2, 60), &UserConfigBackend::captureScreenshotPreviewSecondsChanged);
 
     updateWatchedPaths();
 }
