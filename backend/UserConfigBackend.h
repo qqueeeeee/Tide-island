@@ -60,6 +60,16 @@ class UserConfigBackend final : public QObject {
     Q_PROPERTY(int titleFontSize READ titleFontSize NOTIFY titleFontSizeChanged FINAL)
     Q_PROPERTY(int iconFontSize READ iconFontSize NOTIFY iconFontSizeChanged FINAL)
 
+    Q_PROPERTY(bool statusBarEnabled READ statusBarEnabled NOTIFY statusBarEnabledChanged FINAL)
+    Q_PROPERTY(int statusBarSideMargin READ statusBarSideMargin NOTIFY statusBarSideMarginChanged FINAL)
+    Q_PROPERTY(int statusBarOpacity READ statusBarOpacity NOTIFY statusBarOpacityChanged FINAL)
+    Q_PROPERTY(bool statusBarShowWorkspaces READ statusBarShowWorkspaces NOTIFY statusBarShowWorkspacesChanged FINAL)
+    Q_PROPERTY(bool statusBarShowActiveWindow READ statusBarShowActiveWindow NOTIFY statusBarShowActiveWindowChanged FINAL)
+    Q_PROPERTY(bool statusBarShowStatusIcons READ statusBarShowStatusIcons NOTIFY statusBarShowStatusIconsChanged FINAL)
+    Q_PROPERTY(bool statusBarShowClock READ statusBarShowClock NOTIFY statusBarShowClockChanged FINAL)
+    Q_PROPERTY(bool statusBarShowDateOnHover READ statusBarShowDateOnHover NOTIFY statusBarShowDateOnHoverChanged FINAL)
+    Q_PROPERTY(bool statusBarFadeWithIsland READ statusBarFadeWithIsland NOTIFY statusBarFadeWithIslandChanged FINAL)
+
 public:
     explicit UserConfigBackend(QObject *parent = nullptr);
 
@@ -107,6 +117,15 @@ public:
     int bodyFontSize() const;
     int titleFontSize() const;
     int iconFontSize() const;
+    bool statusBarEnabled() const;
+    int statusBarSideMargin() const;
+    int statusBarOpacity() const;
+    bool statusBarShowWorkspaces() const;
+    bool statusBarShowActiveWindow() const;
+    bool statusBarShowStatusIcons() const;
+    bool statusBarShowClock() const;
+    bool statusBarShowDateOnHover() const;
+    bool statusBarFadeWithIsland() const;
     void setDefaultWallpaperPath(const QString &path);
     void setDefaultTlpSudoPassword(const QString &password);
 
@@ -158,6 +177,15 @@ signals:
     void bodyFontSizeChanged();
     void titleFontSizeChanged();
     void iconFontSizeChanged();
+    void statusBarEnabledChanged();
+    void statusBarSideMarginChanged();
+    void statusBarOpacityChanged();
+    void statusBarShowWorkspacesChanged();
+    void statusBarShowActiveWindowChanged();
+    void statusBarShowStatusIconsChanged();
+    void statusBarShowClockChanged();
+    void statusBarShowDateOnHoverChanged();
+    void statusBarFadeWithIslandChanged();
 
 private:
     void scheduleReload();
@@ -209,6 +237,15 @@ private:
     int m_bodyFontSize = 16;
     int m_titleFontSize = 20;
     int m_iconFontSize = 18;
+    bool m_statusBarEnabled = true;
+    int m_statusBarSideMargin = 22;
+    int m_statusBarOpacity = 100;
+    bool m_statusBarShowWorkspaces = true;
+    bool m_statusBarShowActiveWindow = true;
+    bool m_statusBarShowStatusIcons = true;
+    bool m_statusBarShowClock = true;
+    bool m_statusBarShowDateOnHover = true;
+    bool m_statusBarFadeWithIsland = true;
 
     QFileSystemWatcher m_watcher;
     QTimer m_reloadTimer;

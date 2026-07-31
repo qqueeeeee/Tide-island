@@ -38,6 +38,8 @@ ApplicationWindow {
             return shortcutPage
         case 5:
             return interactionPage
+        case 6:
+            return statusBarPage
         default:
             return null
         }
@@ -249,6 +251,32 @@ ApplicationWindow {
             }
         }
 
+        Text{
+            id: statusBarButton
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: 485
+            color: currentPage === 6 ? Theme.selectedColor : Theme.textColor
+            text: statusBarButtonText.width > mainSplitLine.x ? "B" : "Status Bar"
+            font.family: Theme.titleFontFamily
+            font.pixelSize: 23
+
+            TextMetrics {
+                id: statusBarButtonText
+                font: statusBarButton.font
+                text: "Status Bar"
+            }
+
+            Behavior on color {ColorAnimation{ duration:Theme.animationDuration}}
+
+            MouseArea{
+                anchors.fill:parent
+
+                onClicked: {
+                    selectPage(6)
+                }
+            }
+        }
+
         Text {
             id: appearanceButton
 
@@ -316,6 +344,13 @@ ApplicationWindow {
 
         Interaction {
             id: interactionPage
+            anchors.fill: parent
+            visible: false
+            opacity: 0
+        }
+
+        StatusBar {
+            id: statusBarPage
             anchors.fill: parent
             visible: false
             opacity: 0

@@ -321,6 +321,51 @@ int UserConfigBackend::islandPositionX() const
     return m_islandPositionX;
 }
 
+bool UserConfigBackend::statusBarEnabled() const
+{
+    return m_statusBarEnabled;
+}
+
+int UserConfigBackend::statusBarSideMargin() const
+{
+    return m_statusBarSideMargin;
+}
+
+int UserConfigBackend::statusBarOpacity() const
+{
+    return m_statusBarOpacity;
+}
+
+bool UserConfigBackend::statusBarShowWorkspaces() const
+{
+    return m_statusBarShowWorkspaces;
+}
+
+bool UserConfigBackend::statusBarShowActiveWindow() const
+{
+    return m_statusBarShowActiveWindow;
+}
+
+bool UserConfigBackend::statusBarShowStatusIcons() const
+{
+    return m_statusBarShowStatusIcons;
+}
+
+bool UserConfigBackend::statusBarShowClock() const
+{
+    return m_statusBarShowClock;
+}
+
+bool UserConfigBackend::statusBarShowDateOnHover() const
+{
+    return m_statusBarShowDateOnHover;
+}
+
+bool UserConfigBackend::statusBarFadeWithIsland() const
+{
+    return m_statusBarFadeWithIsland;
+}
+
 int UserConfigBackend::bodyFontSize() const
 {
     return m_bodyFontSize;
@@ -476,6 +521,16 @@ void UserConfigBackend::loadConfig()
     updateField(this, m_bodyFontSize, jsonInt(configObject, QLatin1String("bodyFontSize"), 16), &UserConfigBackend::bodyFontSizeChanged);
     updateField(this, m_titleFontSize, jsonInt(configObject, QLatin1String("titleFontSize"), 20), &UserConfigBackend::titleFontSizeChanged);
     updateField(this, m_iconFontSize, jsonInt(configObject, QLatin1String("iconFontSize"), 18), &UserConfigBackend::iconFontSizeChanged);
+
+    updateField(this, m_statusBarEnabled, jsonBool(configObject, QLatin1String("statusBarEnabled"), true), &UserConfigBackend::statusBarEnabledChanged);
+    updateField(this, m_statusBarSideMargin, jsonBoundedInt(configObject, QLatin1String("statusBarSideMargin"), 22, 0, 400), &UserConfigBackend::statusBarSideMarginChanged);
+    updateField(this, m_statusBarOpacity, jsonBoundedInt(configObject, QLatin1String("statusBarOpacity"), 100, 0, 100), &UserConfigBackend::statusBarOpacityChanged);
+    updateField(this, m_statusBarShowWorkspaces, jsonBool(configObject, QLatin1String("statusBarShowWorkspaces"), true), &UserConfigBackend::statusBarShowWorkspacesChanged);
+    updateField(this, m_statusBarShowActiveWindow, jsonBool(configObject, QLatin1String("statusBarShowActiveWindow"), true), &UserConfigBackend::statusBarShowActiveWindowChanged);
+    updateField(this, m_statusBarShowStatusIcons, jsonBool(configObject, QLatin1String("statusBarShowStatusIcons"), true), &UserConfigBackend::statusBarShowStatusIconsChanged);
+    updateField(this, m_statusBarShowClock, jsonBool(configObject, QLatin1String("statusBarShowClock"), true), &UserConfigBackend::statusBarShowClockChanged);
+    updateField(this, m_statusBarShowDateOnHover, jsonBool(configObject, QLatin1String("statusBarShowDateOnHover"), true), &UserConfigBackend::statusBarShowDateOnHoverChanged);
+    updateField(this, m_statusBarFadeWithIsland, jsonBool(configObject, QLatin1String("statusBarFadeWithIsland"), true), &UserConfigBackend::statusBarFadeWithIslandChanged);
 
     updateWatchedPaths();
 }
