@@ -65,7 +65,9 @@ Item {
 
     // Bar content is pinned to the island's *resting* baseline so it never rides
     // down with the capsule when the island expands.
-    readonly property real restingHeight: capsuleRestingHeight > 0 ? capsuleRestingHeight : capsuleHeight
+    // Never fall back to the live capsule height: that made the bar ride down
+    // with the island whenever it expanded.
+    readonly property real restingHeight: capsuleRestingHeight > 0 ? capsuleRestingHeight : 34
     readonly property real baselineY: capsuleY + restingHeight / 2
     readonly property real slideDistance: 6
 
