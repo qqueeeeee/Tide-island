@@ -55,6 +55,7 @@ class UserConfigBackend final : public QObject {
     Q_PROPERTY(int islandExclusiveZone READ islandExclusiveZone NOTIFY islandExclusiveZoneChanged FINAL)
     Q_PROPERTY(int islandTopMargin READ islandTopMargin NOTIFY islandTopMarginChanged FINAL)
     Q_PROPERTY(int islandPositionX READ islandPositionX NOTIFY islandPositionXChanged FINAL)
+    Q_PROPERTY(bool islandMacNotchStyle READ islandMacNotchStyle NOTIFY islandMacNotchStyleChanged FINAL)
     Q_PROPERTY(int islandBackgroundOpacity READ islandBackgroundOpacity NOTIFY islandBackgroundOpacityChanged FINAL)
     Q_PROPERTY(int bodyFontSize READ bodyFontSize NOTIFY bodyFontSizeChanged FINAL)
     Q_PROPERTY(int titleFontSize READ titleFontSize NOTIFY titleFontSizeChanged FINAL)
@@ -122,6 +123,7 @@ public:
     int islandExclusiveZone() const;
     int islandTopMargin() const;
     int islandPositionX() const;
+    bool islandMacNotchStyle() const;
     int islandBackgroundOpacity() const;
     int bodyFontSize() const;
     int titleFontSize() const;
@@ -191,6 +193,7 @@ signals:
     void islandExclusiveZoneChanged();
     void islandTopMarginChanged();
     void islandPositionXChanged();
+    void islandMacNotchStyleChanged();
     void islandBackgroundOpacityChanged();
     void bodyFontSizeChanged();
     void titleFontSizeChanged();
@@ -261,6 +264,7 @@ private:
     int m_islandExclusiveZone = 45;
     int m_islandTopMargin = 11;
     int m_islandPositionX = 50;
+    bool m_islandMacNotchStyle = true;
     int m_bodyFontSize = 16;
     int m_titleFontSize = 20;
     int m_iconFontSize = 18;

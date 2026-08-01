@@ -117,6 +117,14 @@ PagePanel {
 
                     ToggleRow {
                         width: parent.width
+                        title: "macOS Notch Island"
+                        subtitle: "Weld the island to the top edge with a squared-off macOS notch shape (off = floating iOS pill)"
+                        checked: root.boolValue("islandMacNotchStyle", true)
+                        onToggledValue: function(value) { root.setBoolValue("islandMacNotchStyle", value) }
+                    }
+
+                    ToggleRow {
+                        width: parent.width
                         title: "Enable Status Bar"
                         subtitle: "Transparent iOS-style bar sharing the island's surface"
                         checked: root.boolValue("statusBarEnabled", true)

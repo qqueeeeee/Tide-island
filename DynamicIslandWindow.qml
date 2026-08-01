@@ -159,13 +159,13 @@ PanelWindow {
         }
     }
     readonly property real capsuleWindowHeight: Math.ceil(
-        userConfig.islandTopMargin + mainCapsule.targetHeight + 12
+        root.islandTopOffset + mainCapsule.targetHeight + 12
     )
     readonly property real connectivityDetailWindowHeight: root.anyConnectivityDetailMounted
-        ? Math.ceil(userConfig.islandTopMargin + root.connectivityDetailHeight + 12)
+        ? Math.ceil(root.islandTopOffset + root.connectivityDetailHeight + 12)
         : 0
     readonly property real overviewWindowHeight: root.overviewVisible
-        ? Math.ceil(userConfig.islandTopMargin + root.overviewCapsuleHeight + 8)
+        ? Math.ceil(root.islandTopOffset + root.overviewCapsuleHeight + 8)
         : 0
     readonly property real statusBarWindowHeight: root.userConfig.statusBarEnabled
         ? statusBar.requiredWindowHeight
@@ -227,20 +227,44 @@ PanelWindow {
     readonly property string notificationStatusIcon: "\uf0f3"
     readonly property real overviewWindowCornerRadius: 12
 
-    // --- iOS Dynamic Island exact metrics ---
-    // Reference: iPhone 15/16 Pro. Idle pill 125x37pt (radius = height/2, 18.5),
-    // top inset 11pt, expanded Live Activity 371x160pt with a 44pt continuous
-    // corner radius, compact (leading+trailing) pill ~200pt wide.
-    readonly property real iosScale: userConfig.islandHeight / 37.0
-    readonly property real iosCompactWidth: userConfig.islandWidth * (200.0 / 125.0)
+    // --- macOS Dynamic Island (notch) metrics ---
+    // Matches the macOS notch shells (NotchNook / Boring Notch): the capsule is
+    // welded to the top edge of the screen, top corners are square so it reads as
+    // part of the display bezel, and only the bottom corners are rounded.
+    readonly property bool macNotchStyle: userConfig.islandMacNotchStyle
+    readonly property real macNotchRestingWidth: 208
+    readonly property real macNotchRestingHeight: 34
+    readonly property real macNotchShoulder: 11
+    readonly property real islandRestingWidth: root.macNotchStyle
+        ? root.macNotchRestingWidth
+        : userConfig.islandWidth
+    readonly property real islandRestingHeight: root.macNotchStyle
+        ? root.macNotchRestingHeight
+        : userConfig.islandHeight
+    readonly property real islandTopOffset: root.macNotchStyle ? 0 : userConfig.islandTopMargin
+
+    // --- Morph metrics ---
+    // iOS reference: iPhone 15/16 Pro idle pill 125x37pt, compact ~200pt,
+    // expanded Live Activity 371x160pt with a 44pt continuous radius.
+    // macOS reference: notch shells stay narrow when compact and open into a
+    // wide 480x190 panel with a 22pt bottom radius.
+    readonly property real iosScale: root.islandRestingHeight / 37.0
+    readonly property real iosCompactWidth: root.macNotchStyle
+        ? root.macNotchRestingWidth * 1.26
+        : root.islandRestingWidth * (200.0 / 125.0)
     readonly property real iosExpandedWidth: Math.min(
-        root.width - userConfig.islandTopMargin * 2,
-        userConfig.islandWidth * (371.0 / 125.0)
+        root.width - 48,
+        root.macNotchStyle ? 480 : root.islandRestingWidth * (371.0 / 125.0)
     )
-    readonly property real iosExpandedHeight: userConfig.islandHeight * (160.0 / 37.0)
-    readonly property real iosExpandedRadius: 44.0 * iosScale
-    readonly property real iosNotificationHeight: userConfig.islandHeight * (56.0 / 37.0)
+    readonly property real iosExpandedHeight: root.macNotchStyle
+        ? 190
+        : root.islandRestingHeight * (160.0 / 37.0)
+    readonly property real iosExpandedRadius: root.macNotchStyle ? 22 : 44.0 * iosScale
+    readonly property real iosNotificationHeight: root.macNotchStyle
+        ? 62
+        : root.islandRestingHeight * (56.0 / 37.0)
     readonly property var iosMorphCurve: [0.32, 0.72, 0.0, 1.0, 1.0, 1.0]
+
     readonly property int dynamicIslandAcceptedButtons: userConfig.mouseButtonsMask([
         1,
         userConfig.dynamicIslandPrimaryButton,
@@ -278,7 +302,7 @@ PanelWindow {
         || (autoHideRevealSource === "edge" && autoHideTargetVisible)
         || islandContainer.notificationLayerVisible
     property real exclusiveZoneProgress: exclusiveZoneTargetActive ? 1 : 0
-    readonly property real autoHideRevealWidth: Math.min(root.width, Math.max(userConfig.islandWidth + 120, 240))
+    readonly property real autoHideRevealWidth: Math.min(root.width, Math.max(root.islandRestingWidth + 120, 240))
     readonly property real autoHideRevealHeight: autoHideEnabled ? 10 : 0
     readonly property real autoHideRevealX: Math.max(
         0,
@@ -313,11 +337,11 @@ PanelWindow {
         ? controlCenterLoader.item.controlCenterMaximumExtraHeight
         : 120
     readonly property real controlCenterWindowHeight: islandContainer.controlCenterLayerVisible
-        ? userConfig.islandTopMargin + 320 + root.controlCenterMaximumExtraHeight + 12
+        ? root.islandTopOffset + 320 + root.controlCenterMaximumExtraHeight + 12
         : 0
 
     readonly property real notificationCenterWindowHeight: islandContainer.notificationCenterLayerVisible
-        ? userConfig.islandTopMargin + (notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 400) + 6
+        ? root.islandTopOffset + (notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 400) + 6
         : 0
     readonly property real connectivityDetailGap: 16
     readonly property int connectivityDetailAnimationDuration: 360
@@ -927,7 +951,7 @@ PanelWindow {
         readonly property bool splitUsesExtendedLayout: splitShowsProgress || splitShowsText
         readonly property real splitCapsuleWidth: splitShowsProgress
             ? root.iosCompactWidth * 1.24
-            : (splitShowsText ? root.iosCompactWidth : userConfig.islandWidth)
+            : (splitShowsText ? root.iosCompactWidth : root.islandRestingWidth)
         readonly property bool canShowSideSwipe: islandState === "normal"
             || islandState === "custom"
             || islandState === "lyrics"
@@ -1294,25 +1318,25 @@ PanelWindow {
         function sideSwipeRestWidthForProgress(progressValue) {
             if (progressValue <= -0.5) return customCapsuleWidth;
             if (progressValue >= 0.5) return lyricsCapsuleWidth;
-            return userConfig.islandWidth;
+            return root.islandRestingWidth;
         }
 
         function customSideSwipeDragDistance() {
             const view = customSwipeLoader.item;
             if (view && view.dragDistance > 0) return view.dragDistance;
-            return Math.max(userConfig.islandWidth, customCapsuleWidth + 4);
+            return Math.max(root.islandRestingWidth, customCapsuleWidth + 4);
         }
 
         function lyricsSideSwipeDragDistance() {
             const view = lyricsSwipeLoader.item;
             if (view && view.dragDistance > 0) return view.dragDistance;
-            return Math.max(userConfig.islandWidth, lyricsCapsuleWidth + 2);
+            return Math.max(root.islandRestingWidth, lyricsCapsuleWidth + 2);
         }
 
         function sideSwipeDragDistanceForDirection(direction) {
             if (direction === "left") return customSideSwipeDragDistance();
             if (direction === "right") return lyricsSideSwipeDragDistance();
-            return userConfig.islandWidth;
+            return root.islandRestingWidth;
         }
 
         function advanceSideSwipeProgress(currentProgress, deltaX) {
@@ -1366,18 +1390,18 @@ PanelWindow {
                 if (finalProgress >= -0.44) {
                     settleAction = "time";
                     settleProgress = 0;
-                    settleWidth = userConfig.islandWidth;
+                    settleWidth = root.islandRestingWidth;
                 }
             } else if (startProgress >= 0.5) {
                 if (finalProgress <= 0.44) {
                     settleAction = "time";
                     settleProgress = 0;
-                    settleWidth = userConfig.islandWidth;
+                    settleWidth = root.islandRestingWidth;
                 }
             } else {
                 settleAction = "time";
                 settleProgress = 0;
-                settleWidth = userConfig.islandWidth;
+                settleWidth = root.islandRestingWidth;
             }
 
             return {
@@ -1825,7 +1849,7 @@ PanelWindow {
             capsuleWidth: mainCapsule.width
             capsuleY: mainCapsule.y
             capsuleHeight: mainCapsule.height
-            capsuleRestingWidth: root.userConfig.islandWidth
+            capsuleRestingWidth: root.root.islandRestingWidth
             revealProgress: root.autoHideProgress
             islandBusy: (islandContainer.islandState !== "normal"
                 && islandContainer.islandState !== "capture_recording") || root.overviewVisible
@@ -1848,6 +1872,85 @@ PanelWindow {
                     integration.focusWorkspace(workspaceId);
             }
             onStatusClusterActivated: root.toggleControlCenterWindow()
+        }
+
+        // macOS notch shoulders: the concave fillets that blend the notch into
+        // the surrounding bezel, drawn in the capsule colour on both sides.
+        Component {
+            id: notchShoulderComponent
+
+            Canvas {
+                property bool mirrored: false
+                property color fillColor: "#000000"
+
+                onFillColorChanged: requestPaint()
+                onMirroredChanged: requestPaint()
+                onPaint: {
+                    const ctx = getContext("2d");
+                    ctx.reset();
+                    ctx.fillStyle = fillColor;
+                    ctx.beginPath();
+                    if (mirrored) {
+                        // Left shoulder: fill everything except a quarter disc
+                        // centred on the outer bottom corner.
+                        ctx.moveTo(width, 0);
+                        ctx.lineTo(0, 0);
+                        ctx.arc(0, height, width, -Math.PI / 2, 0, false);
+                        ctx.lineTo(width, 0);
+                    } else {
+                        ctx.moveTo(0, 0);
+                        ctx.lineTo(0, height);
+                        ctx.arc(width, height, width, Math.PI, Math.PI * 1.5, false);
+                        ctx.lineTo(0, 0);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+        }
+
+        Loader {
+            id: leftShoulder
+
+            z: 5
+            sourceComponent: notchShoulderComponent
+            active: root.macNotchStyle
+            visible: root.macNotchStyle && mainCapsule.opacity > 0.01
+            opacity: mainCapsule.opacity
+            width: root.macNotchShoulder
+            height: root.macNotchShoulder
+            x: mainCapsule.x - width
+            y: mainCapsule.y
+            onLoaded: {
+                item.mirrored = true;
+                item.fillColor = mainCapsule.color;
+            }
+        }
+
+        Loader {
+            id: rightShoulder
+
+            z: 5
+            sourceComponent: notchShoulderComponent
+            active: root.macNotchStyle
+            visible: root.macNotchStyle && mainCapsule.opacity > 0.01
+            opacity: mainCapsule.opacity
+            width: root.macNotchShoulder
+            height: root.macNotchShoulder
+            x: mainCapsule.x + mainCapsule.width
+            y: mainCapsule.y
+            onLoaded: {
+                item.mirrored = false;
+                item.fillColor = mainCapsule.color;
+            }
+        }
+
+        Connections {
+            target: mainCapsule
+            function onColorChanged() {
+                if (leftShoulder.item) leftShoulder.item.fillColor = mainCapsule.color;
+                if (rightShoulder.item) rightShoulder.item.fillColor = mainCapsule.color;
+            }
         }
 
         // --- UI 渲染：灵动岛主干 ---
@@ -1879,7 +1982,7 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "capture_recording":
-                    return Math.max(userConfig.islandWidth, root.iosCompactWidth);
+                    return Math.max(root.islandRestingWidth, root.iosCompactWidth);
                 case "capture_screenshot":
                     return root.iosExpandedWidth;
                 case "split":
@@ -1907,7 +2010,7 @@ PanelWindow {
                         Math.min(root.width - 48, notificationLoader.item.maximumWidth, notificationLoader.item.preferredWidth)
                     );
                 default:
-                    return userConfig.islandWidth;
+                    return root.islandRestingWidth;
                 }
             }
             readonly property real targetHeight: {
@@ -1931,7 +2034,7 @@ PanelWindow {
                         ? Math.max(root.iosNotificationHeight, notificationLoader.item.preferredHeight)
                         : root.iosNotificationHeight;
                 default:
-                    return userConfig.islandHeight;
+                    return root.islandRestingHeight;
                 }
             }
             readonly property real targetRadius: {
@@ -1955,17 +2058,17 @@ PanelWindow {
                         ? Math.min(root.iosExpandedRadius, mainCapsule.targetHeight * 0.275)
                         : mainCapsule.targetHeight / 2;
                 default:
-                    return userConfig.islandHeight / 2;
+                    return root.islandRestingHeight / 2;
                 }
             }
             function sideSwipeWidthForProgress(progressValue) {
                 if (progressValue < 0)
-                    return userConfig.islandWidth + (islandContainer.customCapsuleWidth - userConfig.islandWidth)
+                    return root.islandRestingWidth + (islandContainer.customCapsuleWidth - root.islandRestingWidth)
                         * islandContainer.clamp01(-progressValue);
                 if (progressValue > 0)
-                    return userConfig.islandWidth + (islandContainer.lyricsCapsuleWidth - userConfig.islandWidth)
+                    return root.islandRestingWidth + (islandContainer.lyricsCapsuleWidth - root.islandRestingWidth)
                         * islandContainer.clamp01(progressValue);
-                return userConfig.islandWidth;
+                return root.islandRestingWidth;
             }
             readonly property real sideSwipePreviewWidth: mainCapsule.sideSwipeWidthForProgress(
                 islandContainer.swipeTransitionProgress
@@ -1973,9 +2076,15 @@ PanelWindow {
             color: root.overviewContentVisible
                 ? root.overviewCapsuleColor
                 : (notificationHistorySurface ? "#080808" : Qt.rgba(0, 0, 0, userConfig.islandBackgroundOpacity / 100.0))
-            y: userConfig.islandTopMargin
-                - (1 - root.autoHideProgress) * (targetHeight + userConfig.islandTopMargin + 8)
-            x: parent ? parent.width * userConfig.islandPositionX / 100 - width / 2 : 0
+            y: root.islandTopOffset
+                - (1 - root.autoHideProgress) * (targetHeight + root.islandTopOffset + 8)
+            x: parent
+                ? Math.round(
+                    root.macNotchStyle
+                        ? (parent.width - width) / 2
+                        : parent.width * userConfig.islandPositionX / 100 - width / 2
+                )
+                : 0
             clip: true
             width: displayedWidth
             height: targetHeight
@@ -1983,6 +2092,27 @@ PanelWindow {
             opacity: root.autoHideProgress
             scale: 0.96 + root.autoHideProgress * 0.04
             transformOrigin: Item.Top
+
+            // macOS notch: square off the two top corners so the capsule is
+            // welded to the top bezel instead of floating like the iOS pill.
+            Rectangle {
+                visible: root.macNotchStyle && mainCapsule.radius > 0
+                color: mainCapsule.color
+                width: mainCapsule.radius
+                height: mainCapsule.radius
+                anchors.top: parent.top
+                anchors.left: parent.left
+                z: 0
+            }
+            Rectangle {
+                visible: root.macNotchStyle && mainCapsule.radius > 0
+                color: mainCapsule.color
+                width: mainCapsule.radius
+                height: mainCapsule.radius
+                anchors.top: parent.top
+                anchors.right: parent.right
+                z: 0
+            }
 
             onBaseTargetWidthChanged: {
                 if (!capsuleMouseArea.sideSwipeInteractive && !islandContainer.sideSwipeSettling)
