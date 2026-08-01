@@ -20,6 +20,19 @@ Item {
     readonly property string monitorName: monitor && monitor.name ? String(monitor.name) : ""
     readonly property var workspaceValues: Hyprland.workspaces ? Hyprland.workspaces.values : []
     property var workspaceIds: []
+    // Focused workspace of this monitor, so a standalone bar surface does not
+    // need the island window to tell it which workspace is active.
+    property int activeWorkspaceId: 1
+
+    function refreshActiveWorkspace() {
+        const active = root.monitor && root.monitor.activeWorkspace
+            ? root.monitor.activeWorkspace
+            : null;
+        const id = active ? Number(active.id) : NaN;
+        if (isFinite(id) && id > 0 && id !== root.activeWorkspaceId)
+            root.activeWorkspaceId = id;
+    }
+
 
     function rebuild() {
         const ids = [];
@@ -50,21 +63,29 @@ Item {
 
     onWorkspaceValuesChanged: rebuildTimer.restart()
     onMonitorNameChanged: rebuildTimer.restart()
-    Component.onCompleted: rebuild()
+    Component.onCompleted: {
+        rebuild();
+        refreshActiveWorkspace();
+    }
 
     Timer {
         id: rebuildTimer
         interval: 60
         repeat: false
-        onTriggered: root.rebuild()
+        onTriggered: {
+            root.rebuild();
+            root.refreshActiveWorkspace();
+        }
     }
 
     Connections {
         target: Hyprland
         function onRawEvent(event) {
             const name = event && event.name ? String(event.name) : "";
-            if (name.indexOf("workspace") !== -1 || name.indexOf("monitor") !== -1)
+            if (name.indexOf("workspace") !== -1 || name.indexOf("monitor") !== -1) {
                 rebuildTimer.restart();
+                root.refreshActiveWorkspace();
+            }
         }
     }
 }

@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Io
 import IslandBackend
 import "qml/common"
+import "qml/bar" as Bar
 
 Scope {
     id: shellRoot
@@ -334,6 +335,20 @@ Scope {
             required property var modelData
 
             screen: modelData
+            shellRootController: shellRoot
+        }
+    }
+
+    // The status bar is its own layer surface so island geometry can never move it.
+    Variants {
+        id: statusBarVariants
+
+        model: Quickshell.screens
+
+        Bar.StatusBarWindow {
+            required property var modelData
+
+            screenObject: modelData
             shellRootController: shellRoot
         }
     }

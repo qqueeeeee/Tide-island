@@ -8,7 +8,6 @@ import "qml/controlcenter"
 import "qml/connectivity"
 import "qml/island"
 import "qml/workspace"
-import "qml/bar" as Bar
 
 PanelWindow {
     id: root
@@ -87,23 +86,6 @@ PanelWindow {
         when: hyprlandIntegrationLoader.item !== null
     }
 
-    Loader {
-        id: statusBarWorkspaceModelLoader
-
-        active: root.userConfig.statusBarEnabled
-            && root.userConfig.statusBarShowWorkspaces
-            && !root.compositorIsNiri
-        asynchronous: false
-        source: active ? "qml/bar/BarHyprlandWorkspaceModel.qml" : ""
-    }
-
-    Binding {
-        target: statusBarWorkspaceModelLoader.item
-        property: "screenObject"
-        value: root.screen
-        when: statusBarWorkspaceModelLoader.item !== null
-    }
-
     color: StyleTokens.transparent
     anchors { top: true; left: true; right: true }
     mask: Region {
@@ -141,22 +123,6 @@ PanelWindow {
             height: bluetoothConnectivityDetailShell.visible ? Math.ceil(bluetoothConnectivityDetailShell.height) : 0
         }
 
-        // Status bar clusters only take input while they are actually visible.
-        Region {
-            intersection: Intersection.Combine
-            x: Math.floor(statusBar.leftInputX)
-            y: Math.floor(statusBar.leftInputY)
-            width: Math.ceil(statusBar.leftInputWidth)
-            height: Math.ceil(statusBar.leftInputHeight)
-        }
-
-        Region {
-            intersection: Intersection.Combine
-            x: Math.floor(statusBar.rightInputX)
-            y: Math.floor(statusBar.rightInputY)
-            width: Math.ceil(statusBar.rightInputWidth)
-            height: Math.ceil(statusBar.rightInputHeight)
-        }
     }
     readonly property real capsuleWindowHeight: Math.ceil(
         root.islandTopOffset + mainCapsule.targetHeight + 12
@@ -167,12 +133,13 @@ PanelWindow {
     readonly property real overviewWindowHeight: root.overviewVisible
         ? Math.ceil(root.islandTopOffset + root.overviewCapsuleHeight + 8)
         : 0
-    readonly property real statusBarWindowHeight: root.userConfig.statusBarEnabled
-        ? statusBar.requiredWindowHeight
+    // The status bar lives in its own surface (qml/bar/StatusBarWindow.qml), so
+    // it no longer contributes to this window's height.
+    readonly property real statusBarReserveHeight: root.userConfig.statusBarEnabled
+        ? Math.ceil(root.islandTopOffset + root.islandRestingHeight)
         : 0
     readonly property real requestedWindowHeight: Math.max(
         root.notificationCenterWindowHeight,
-        root.statusBarWindowHeight,
         root.capsuleWindowHeight,
         root.connectivityDetailWindowHeight,
         root.overviewWindowHeight,
@@ -278,7 +245,7 @@ PanelWindow {
     // notch / bar content, otherwise a thin gap shows above tiled windows.
     readonly property real baseExclusiveZone: root.macNotchStyle
         ? Math.ceil(Math.max(root.islandTopOffset + root.islandRestingHeight,
-                             userConfig.statusBarEnabled ? statusBar.contentBottom : 0))
+                             root.statusBarReserveHeight))
         : userConfig.islandExclusiveZone
     readonly property bool hoverExpandEnabled: configuredHoverExpandAction > 0
     readonly property bool topGestureInputActive: !root.overviewVisible && islandContainer.canShowSideSwipe
@@ -1843,44 +1810,6 @@ PanelWindow {
                 if (islandState === "expanded" && !expandedByPlayerAutoOpen) return;
                 showExpandedPlayer(true);
             }
-        }
-
-        // --- iOS 风格顶栏：与灵动岛共享同一层与输入遮罩 ---
-        Bar.StatusBarLayer {
-            id: statusBar
-
-            z: 4
-            capsuleX: mainCapsule.x
-            capsuleWidth: mainCapsule.width
-            // Pinned to the island's resting baseline: the bar must never ride
-            // down with the capsule when the island expands.
-            capsuleY: root.islandTopOffset
-                - (1 - root.autoHideProgress) * (root.islandRestingHeight + root.islandTopOffset + 8)
-            capsuleHeight: mainCapsule.height
-            capsuleRestingWidth: root.islandRestingWidth
-            capsuleRestingHeight: root.islandRestingHeight
-            revealProgress: root.autoHideProgress
-            islandBusy: (islandContainer.islandState !== "normal"
-                && islandContainer.islandState !== "capture_recording") || root.overviewVisible
-            currentWorkspace: islandContainer.currentWs
-            workspaceIds: statusBarWorkspaceModelLoader.item
-                ? statusBarWorkspaceModelLoader.item.workspaceIds
-                : []
-            workspacesInteractive: !root.compositorIsNiri
-            timeText: timeObj.currentTime
-            dateText: timeObj.currentDateLabel
-            batteryCapacity: islandContainer.batteryCapacity
-            isCharging: islandContainer.isCharging
-            isMuted: islandContainer.isMuted
-            recordingActive: root.captureRecordingActive
-            recordingElapsedText: root.captureElapsedText
-
-            onWorkspaceFocusRequested: function(workspaceId) {
-                const integration = hyprlandIntegrationLoader.item;
-                if (integration)
-                    integration.focusWorkspace(workspaceId);
-            }
-            onStatusClusterActivated: root.toggleControlCenterWindow()
         }
 
         // macOS notch shoulders: the concave fillets that blend the notch into

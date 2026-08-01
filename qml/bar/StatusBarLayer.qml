@@ -4,10 +4,10 @@ import QtQuick
 import IslandBackend
 import "." as Bar
 
-// Fully transparent iOS-style status bar. It lives inside the island's own
-// PanelWindow so both surfaces share one layer-shell surface, one input mask and
-// one animation clock. Content sits on the island's baseline and yields space to
-// the capsule whenever it grows.
+// Fully transparent iOS-style status bar. It is hosted by its own layer-shell
+// surface (qml/bar/StatusBarWindow.qml) with a fixed height, so island geometry
+// changes can never move bar content. Content sits on the island's resting
+// baseline and only dims while the island is busy.
 Item {
     id: root
 
