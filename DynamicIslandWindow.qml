@@ -1857,8 +1857,8 @@ PanelWindow {
             capsuleY: root.islandTopOffset
                 - (1 - root.autoHideProgress) * (root.islandRestingHeight + root.islandTopOffset + 8)
             capsuleHeight: mainCapsule.height
-            capsuleRestingWidth: root.root.islandRestingWidth
-            capsuleRestingHeight: root.root.islandRestingHeight
+            capsuleRestingWidth: root.islandRestingWidth
+            capsuleRestingHeight: root.islandRestingHeight
             revealProgress: root.autoHideProgress
             islandBusy: (islandContainer.islandState !== "normal"
                 && islandContainer.islandState !== "capture_recording") || root.overviewVisible
