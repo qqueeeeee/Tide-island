@@ -58,15 +58,16 @@ Item {
     readonly property real preferredWidth: expanded && hasOverflowContent ? expandedPreferredWidth : compactPreferredWidth
     readonly property real preferredHeight: expanded && hasOverflowContent ? expandedPreferredHeight : compactPreferredHeight
 
-    anchors.fill: parent
-    anchors.margins: 0
-    opacity: showCondition ? 1 : 0
+    // Driven by IslandContentReveal — do not bind.
+    property real revealOffset: 0
 
-    Behavior on opacity {
-        NumberAnimation {
-            duration: showCondition ? 280 : 140
-            easing.type: Easing.InOutQuad
-        }
+    anchors.fill: parent
+    opacity: 0
+    transform: Translate { y: root.revealOffset }
+
+    IslandContentReveal {
+        target: root
+        active: root.showCondition
     }
 
     TextMetrics {

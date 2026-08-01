@@ -41,15 +41,17 @@ Item {
         return "#34c759";
     }
 
+    // Driven by IslandContentReveal — do not bind.
+    property real revealOffset: 0
+
     anchors.fill: parent
     anchors.margins: 20
-    opacity: showCondition ? 1 : 0
+    opacity: 0
+    transform: Translate { y: root.revealOffset }
 
-    Behavior on opacity {
-        NumberAnimation {
-            duration: showCondition ? 260 : 100
-            easing.type: Easing.InOutQuad
-        }
+    IslandContentReveal {
+        target: root
+        active: root.showCondition
     }
 
     Column {

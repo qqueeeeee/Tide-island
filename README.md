@@ -251,6 +251,10 @@ Tide Island can be controlled remotely via `quickshell ipc call`:
 | `quickshell ipc call tide openNotificationCenter` | Open the Notification Centre |
 | `quickshell ipc call tide closeNotificationCenter` | Close the Notification Centre |
 | `quickshell ipc call tide toggleApplicationLauncher` | Open or close the application launcher |
+| `quickshell ipc call tide demoNotification` | Preview the notification activity (morph + staggered reveal) |
+| `quickshell ipc call tide demoToast` | Preview the transient AirPods-style toast |
+| `quickshell ipc call tide demoTimer` | Start a 1 minute live-activity timer |
+| `quickshell ipc call tide demoMedia` | Open the expanded media activity |
 
 <br>
 

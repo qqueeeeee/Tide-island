@@ -271,6 +271,25 @@ Scope {
         function toggleApplicationLauncher() {
             shellRoot.forFocusedWindow((window) => window.toggleApplicationLauncherWindow());
         }
+
+        // --- Demo triggers ------------------------------------------------
+        // `qs ipc call tide demoNotification` etc. Handy for tuning the morph
+        // without waiting for a real notification / track change / timer.
+        function demoNotification() {
+            shellRoot.forFocusedWindow((window) => window.demoNotificationWindow());
+        }
+
+        function demoToast() {
+            shellRoot.forFocusedWindow((window) => window.showToastWindow("\uf1e6", "AirPods Pro connected"));
+        }
+
+        function demoTimer() {
+            shellRoot.forFocusedWindow((window) => window.demoTimerWindow());
+        }
+
+        function demoMedia() {
+            shellRoot.forFocusedWindow((window) => window.demoMediaWindow());
+        }
     }
 
     IpcHandler {

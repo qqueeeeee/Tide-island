@@ -119,8 +119,17 @@ Item {
         showPage(1);
     }
 
+    // Driven by IslandContentReveal — do not bind.
+    property real revealOffset: 0
+
     anchors.fill: parent
-    opacity: showCondition ? 1 : 0
+    opacity: 0
+    transform: Translate { y: root.revealOffset }
+
+    IslandContentReveal {
+        target: root
+        active: root.showCondition
+    }
 
     onShowConditionChanged: {
         if (!showCondition) {
@@ -130,13 +139,6 @@ Item {
             pageProgress = 0;
         }
         updateKeyboardFocusForPage();
-    }
-
-    Behavior on opacity {
-        NumberAnimation {
-            duration: showCondition ? 300 : 100
-            easing.type: Easing.InOutQuad
-        }
     }
 
     SequentialAnimation {

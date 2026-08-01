@@ -15,15 +15,19 @@ Item {
     property string textFontFamily: ""
     property bool showCondition: true
     property bool paused: false
+    // Driven by IslandContentReveal — do not bind.
+    property real revealOffset: 0
 
     signal stopRequested()
     signal pauseToggleRequested()
 
     anchors.fill: parent
-    opacity: showCondition ? 1 : 0
+    opacity: 0
+    transform: Translate { y: root.revealOffset }
 
-    Behavior on opacity {
-        NumberAnimation { duration: 200; easing.type: Easing.InOutQuad }
+    IslandContentReveal {
+        target: root
+        active: root.showCondition
     }
 
     // --- Left: recording dot + timer ---
@@ -72,18 +76,14 @@ Item {
         spacing: 8
 
         // Pause / resume
-        Rectangle {
+        IslandActionButton {
             id: pauseButton
 
             anchors.verticalCenter: parent.verticalCenter
-            width: 24
-            height: 24
-            radius: 12
-            color: pauseHover.hovered ? "#33ffffff" : "#22ffffff"
-            scale: pauseArea.pressed ? 0.9 : 1
-
-            Behavior on color { ColorAnimation { duration: 140 } }
-            Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutCubic } }
+            implicitWidth: 26
+            implicitHeight: 26
+            compact: true
+            onActivated: root.pauseToggleRequested()
 
             // Two bars (pause) or a triangle (resume).
             Row {
@@ -112,32 +112,19 @@ Item {
                     ctx.fill();
                 }
             }
-
-            HoverHandler { id: pauseHover }
-
-            MouseArea {
-                id: pauseArea
-
-                anchors.fill: parent
-                acceptedButtons: Qt.LeftButton
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.pauseToggleRequested()
-            }
         }
 
         // Stop
-        Rectangle {
+        IslandActionButton {
             id: stopButton
 
             anchors.verticalCenter: parent.verticalCenter
-            width: 24
-            height: 24
-            radius: 12
-            color: stopHover.hovered ? "#ff5f55" : "#ff453a"
-            scale: stopArea.pressed ? 0.9 : 1
-
-            Behavior on color { ColorAnimation { duration: 140 } }
-            Behavior on scale { NumberAnimation { duration: 110; easing.type: Easing.OutCubic } }
+            implicitWidth: 26
+            implicitHeight: 26
+            compact: true
+            destructive: true
+            filled: true
+            onActivated: root.stopRequested()
 
             Rectangle {
                 anchors.centerIn: parent
@@ -145,17 +132,6 @@ Item {
                 height: 9
                 radius: 2
                 color: "#ffffff"
-            }
-
-            HoverHandler { id: stopHover }
-
-            MouseArea {
-                id: stopArea
-
-                anchors.fill: parent
-                acceptedButtons: Qt.LeftButton
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.stopRequested()
             }
         }
     }

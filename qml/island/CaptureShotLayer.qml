@@ -14,6 +14,8 @@ Item {
     property string textFontFamily: ""
     property string heroFontFamily: ""
     property bool showCondition: true
+    // Driven by IslandContentReveal (see below) — do not bind.
+    property real revealOffset: 0
 
     readonly property string displayName: {
         const value = String(root.filePath);
@@ -28,10 +30,12 @@ Item {
     signal dismissRequested()
 
     anchors.fill: parent
-    opacity: showCondition ? 1 : 0
+    opacity: 0
+    transform: Translate { y: root.revealOffset }
 
-    Behavior on opacity {
-        NumberAnimation { duration: 220; easing.type: Easing.InOutQuad }
+    IslandContentReveal {
+        target: root
+        active: root.showCondition
     }
 
     Item {
@@ -102,66 +106,31 @@ Item {
             anchors.bottom: thumbnailFrame.bottom
             spacing: 8
 
-            ActionButton {
+            IslandActionButton {
                 label: "Copy"
+                accent: true
+                textFontFamily: root.textFontFamily
                 onActivated: root.copyRequested()
             }
 
-            ActionButton {
+            IslandActionButton {
                 label: "Markup"
+                textFontFamily: root.textFontFamily
                 onActivated: root.annotateRequested()
             }
 
-            ActionButton {
+            IslandActionButton {
                 label: "Open"
+                textFontFamily: root.textFontFamily
                 onActivated: root.openRequested()
             }
 
-            ActionButton {
+            IslandActionButton {
                 label: "Delete"
                 destructive: true
+                textFontFamily: root.textFontFamily
                 onActivated: root.deleteRequested()
             }
-        }
-    }
-
-    component ActionButton: Rectangle {
-        id: button
-
-        property string label: ""
-        property bool destructive: false
-
-        signal activated()
-
-        implicitWidth: buttonLabel.implicitWidth + 22
-        width: implicitWidth
-        height: 30
-        radius: 15
-        color: buttonArea.pressed
-            ? (button.destructive ? "#66ff453a" : "#3dffffff")
-            : (button.destructive ? "#33ff453a" : "#1fffffff")
-        scale: buttonArea.pressed ? 0.95 : 1
-
-        Behavior on color { ColorAnimation { duration: 140 } }
-        Behavior on scale { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-
-        Text {
-            id: buttonLabel
-
-            anchors.centerIn: parent
-            text: button.label
-            color: button.destructive ? "#ff8a80" : "#ffffff"
-            font.family: root.textFontFamily
-            font.pixelSize: Math.max(11, root.userConfig.bodyFontSize - 2)
-            font.weight: Font.DemiBold
-        }
-
-        MouseArea {
-            id: buttonArea
-
-            anchors.fill: parent
-            cursorShape: Qt.PointingHandCursor
-            onClicked: button.activated()
         }
     }
 }

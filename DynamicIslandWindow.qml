@@ -227,10 +227,28 @@ PanelWindow {
         ? 190
         : root.islandRestingHeight * (160.0 / 37.0)
     readonly property real iosExpandedRadius: root.macNotchStyle ? 22 : 44.0 * iosScale
+    // Corner radius of the fully grown "card". Apple keeps this in the 28-36pt
+    // band; the notch shell sits a little tighter because its top edge is flat.
+    readonly property real iosLargeCornerRadius: root.macNotchStyle
+        ? 30
+        : Math.max(28, Math.min(36, 34.0 * iosScale))
     readonly property real iosNotificationHeight: root.macNotchStyle
         ? 62
         : root.islandRestingHeight * (56.0 / 37.0)
     readonly property var iosMorphCurve: [0.32, 0.72, 0.0, 1.0, 1.0, 1.0]
+
+    // Pill -> card radius, derived purely from height so the shape can never
+    // disagree with its corners mid-morph. Never exceeds height / 2, so short
+    // but wide states (recording, compact notification) stay true pills.
+    function capsuleRadiusForHeight(shapeHeight) {
+        const pill = shapeHeight / 2;
+        const restingPill = root.islandRestingHeight / 2;
+        const span = Math.max(1, root.iosExpandedHeight - root.islandRestingHeight);
+        const t = Math.max(0, Math.min(1, (shapeHeight - root.islandRestingHeight) / span));
+        const eased = t * t * (3 - 2 * t);
+        return Math.min(pill, restingPill + (root.iosLargeCornerRadius - restingPill) * eased);
+    }
+
 
     readonly property int dynamicIslandAcceptedButtons: userConfig.mouseButtonsMask([
         1,
@@ -704,6 +722,29 @@ PanelWindow {
             islandContainer.showWallpaperPicker();
     }
 
+    // --- Demo / testing helpers -------------------------------------------
+    // Exposed over IPC (`tide demo*`) so every island activity can be triggered
+    // without waiting for a real system event.
+    function showToastWindow(icon, text) {
+        islandContainer.showToastCapsule(icon, text);
+        showAutoHiddenIsland("state");
+    }
+
+    function demoNotificationWindow() {
+        islandContainer.showNotificationCapsule("Tide", "Screenshot saved", "Screenshot_2026-01-01.png");
+        showAutoHiddenIsland("state");
+    }
+
+    function demoTimerWindow() {
+        islandContainer.toggleTimer(0, 1);
+        showAutoHiddenIsland("state");
+    }
+
+    function demoMediaWindow() {
+        islandContainer.showExpandedPlayer(false);
+        showAutoHiddenIsland("state");
+    }
+
     function toggleApplicationLauncherWindow() {
         if (islandContainer.islandState === "application_launcher")
             islandContainer.smartRestoreState();
@@ -899,6 +940,12 @@ PanelWindow {
         property bool timerCompletionAnimating: false
         property real timerCompletionPulse: 0
         property real timerCompletionFlash: 0
+        // Life bar for transient activities (notifications, toasts): drains over
+        // the auto-hide interval so the island shows how long it will stay.
+        property real autoHideLifeProgress: 0
+        property bool autoHideLifeVisible: false
+        readonly property int autoHideLifeMinimumInterval: 1500
+
         readonly property int defaultAutoHideInterval: 1250
         readonly property int notificationAutoHideInterval: 4200
         readonly property int bluetoothExpandedAutoHideInterval: 2500
@@ -1402,11 +1449,38 @@ PanelWindow {
         function restartAutoHideTimer(duration) {
             autoHideTimer.interval = duration === undefined ? defaultAutoHideInterval : duration;
             autoHideTimer.restart();
+            startAutoHideLifeBar(autoHideTimer.interval);
         }
 
         function stopAutoHideTimer() {
             autoHideTimer.stop();
             autoHideTimer.interval = defaultAutoHideInterval;
+            stopAutoHideLifeBar();
+        }
+
+        function startAutoHideLifeBar(interval) {
+            autoHideLifeAnimation.stop();
+            autoHideLifeVisible = interval >= autoHideLifeMinimumInterval;
+            if (!autoHideLifeVisible) {
+                autoHideLifeProgress = 0;
+                return;
+            }
+            autoHideLifeProgress = 1;
+            autoHideLifeAnimation.duration = interval;
+            autoHideLifeAnimation.start();
+        }
+
+        function stopAutoHideLifeBar() {
+            autoHideLifeAnimation.stop();
+            autoHideLifeVisible = false;
+            autoHideLifeProgress = 0;
+        }
+
+        // AirPods-style transient toast: icon + short text, auto dismissing.
+        function showToastCapsule(icon, text, duration) {
+            const interval = duration === undefined ? 2600 : duration;
+            showTransientCapsule(icon, text, -1.0);
+            restartAutoHideTimer(interval);
         }
 
         function requestExpandedPlayerKeyboardFocus() {
@@ -1715,6 +1789,15 @@ PanelWindow {
         }
 
         Timer { id: autoHideTimer; interval: islandContainer.defaultAutoHideInterval; onTriggered: islandContainer.smartRestoreState() }
+
+        NumberAnimation {
+            id: autoHideLifeAnimation
+
+            target: islandContainer
+            property: "autoHideLifeProgress"
+            to: 0
+            easing.type: Easing.Linear
+        }
         Timer {
             id: islandTimerTick
             interval: 1000
@@ -1891,11 +1974,40 @@ PanelWindow {
             }
         }
 
+        // Shared motion tokens for every island animation.
+        IslandMotion { id: islandMotion }
+
+        // Soft ambient shadow so the capsule reads as a physical object floating
+        // over the desktop. Skipped in notch mode, where the shape is welded to
+        // the top bezel and a shadow would look like a rendering artefact.
+        Repeater {
+            model: root.macNotchStyle ? 0 : 3
+
+            Rectangle {
+                required property int index
+
+                readonly property real spread: (index + 1) * 3
+
+                z: 4
+                x: mainCapsule.x - spread
+                y: mainCapsule.y + spread * 0.6
+                width: mainCapsule.width + spread * 2
+                height: mainCapsule.height + spread * 0.8
+                radius: mainCapsule.radius + spread
+                color: "transparent"
+                border.width: spread
+                border.color: Qt.rgba(0, 0, 0, 0.10 - index * 0.025)
+                opacity: mainCapsule.opacity * 0.9
+                visible: !root.overviewContentVisible
+            }
+        }
+
         // --- UI 渲染：灵动岛主干 ---
         Rectangle {
             id: mainCapsule
             z: 5
-            property int morphDuration: 460
+
+            property int morphDuration: islandMotion.settleDuration
             readonly property bool notificationHistorySurface: islandContainer.islandState === "notification_center"
             property real outlineWidth: root.overviewContentVisible || notificationHistorySurface ? 1 : 0
             property color outlineColor: root.overviewContentVisible
@@ -1977,30 +2089,15 @@ PanelWindow {
                     return root.islandRestingHeight;
                 }
             }
+            // One shape, one radius rule: perfect pill while the capsule is
+            // small, easing toward a rounded-card radius as it grows. Because it
+            // is derived from the live height, the corners stay correct at every
+            // frame of the morph instead of being animated separately.
             readonly property real targetRadius: {
                 if (root.overviewVisible) return root.overviewCapsuleRadius;
-
-                switch (islandContainer.islandState) {
-                case "capture_screenshot":
-                    return root.iosExpandedRadius;
-                case "control_center":
-                    return root.iosExpandedRadius;
-                case "notification_center":
-                    return Math.min(root.iosExpandedRadius, mainCapsule.targetHeight * 0.275);
-                case "wallpaper_picker":
-                case "application_launcher":
-                    return root.iosExpandedRadius;
-                case "expanded":
-                case "bluetooth_expanded":
-                    return root.iosExpandedRadius;
-                case "notification":
-                    return islandContainer.notificationExpanded
-                        ? Math.min(root.iosExpandedRadius, mainCapsule.targetHeight * 0.275)
-                        : mainCapsule.targetHeight / 2;
-                default:
-                    return root.islandRestingHeight / 2;
-                }
+                return root.capsuleRadiusForHeight(mainCapsule.targetHeight);
             }
+
             function sideSwipeWidthForProgress(progressValue) {
                 if (progressValue < 0)
                     return root.islandRestingWidth + (islandContainer.customCapsuleWidth - root.islandRestingWidth)
@@ -2028,7 +2125,12 @@ PanelWindow {
             clip: true
             width: displayedWidth
             height: targetHeight
-            radius: targetRadius
+            // Derived from the *live* height, so the corners are never out of
+            // sync with the shape while it springs. No radius animation needed.
+            radius: root.overviewVisible
+                ? Math.min(root.overviewCapsuleRadius, height / 2)
+                : root.capsuleRadiusForHeight(height)
+
             opacity: root.autoHideProgress
             scale: 0.96 + root.autoHideProgress * 0.04
             transformOrigin: Item.Top
@@ -2054,34 +2156,77 @@ PanelWindow {
                 z: 0
             }
 
+            // Very subtle top-down sheen. Kept as an overlay instead of a
+            // gradient on the capsule itself so `color` (and its animation)
+            // stays intact for the notch shoulders that mirror it.
+            Rectangle {
+                anchors.fill: parent
+                z: 0
+                radius: parent.radius
+                opacity: root.overviewContentVisible ? 0 : 1
+                visible: opacity > 0.001
+                gradient: Gradient {
+                    GradientStop { position: 0.0; color: "#12ffffff" }
+                    GradientStop { position: 0.45; color: "#04ffffff" }
+                    GradientStop { position: 1.0; color: "#00ffffff" }
+                }
+
+                Behavior on opacity {
+                    NumberAnimation { duration: 200; easing.type: Easing.InOutQuad }
+                }
+            }
+
+            // Transient activity life bar, hugging the bottom edge.
+            Rectangle {
+                id: autoHideLifeBar
+
+                z: 2
+                height: 2
+                radius: 1
+                color: "#66ffffff"
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: Math.max(3, parent.radius * 0.18)
+                anchors.left: parent.left
+                anchors.leftMargin: Math.max(10, parent.radius * 0.7)
+                width: Math.max(0, (parent.width - anchors.leftMargin * 2)
+                    * islandContainer.autoHideLifeProgress)
+                opacity: islandContainer.autoHideLifeVisible && !root.overviewContentVisible ? 1 : 0
+                visible: opacity > 0.001 && width > 0.5
+
+                Behavior on opacity {
+                    NumberAnimation { duration: 160; easing.type: Easing.InOutQuad }
+                }
+            }
+
             onBaseTargetWidthChanged: {
                 if (!capsuleMouseArea.sideSwipeInteractive && !islandContainer.sideSwipeSettling)
                     displayedWidth = baseTargetWidth;
             }
 
-            Behavior on displayedWidth  {
-                NumberAnimation {
-                    duration: capsuleMouseArea.sideSwipeInteractive ? 0 : mainCapsule.morphDuration
-                    easing.type: Easing.Bezier
-                    easing.bezierCurve: root.iosMorphCurve
+            // Springs, not curves: the island's settle is distance dependent
+            // with a small overshoot, which is what makes it feel like a single
+            // blob of matter rather than a resizing rectangle.
+            Behavior on displayedWidth {
+                enabled: !capsuleMouseArea.sideSwipeInteractive
+
+                SpringAnimation {
+                    spring: islandMotion.shapeSpring
+                    damping: islandMotion.shapeDamping
+                    mass: islandMotion.shapeMass
+                    epsilon: islandMotion.shapeEpsilon
                 }
             }
             Behavior on height {
                 enabled: !(controlCenterLoader.item && controlCenterLoader.item.batteryDrawerMoving)
 
-                NumberAnimation {
-                    duration: mainCapsule.morphDuration
-                    easing.type: Easing.Bezier
-                    easing.bezierCurve: root.iosMorphCurve
+                SpringAnimation {
+                    spring: islandMotion.shapeSpring
+                    damping: islandMotion.shapeDamping
+                    mass: islandMotion.shapeMass
+                    epsilon: islandMotion.shapeEpsilon
                 }
             }
-            Behavior on radius {
-                NumberAnimation {
-                    duration: mainCapsule.morphDuration
-                    easing.type: Easing.Bezier
-                    easing.bezierCurve: root.iosMorphCurve
-                }
-            }
+
             Behavior on color { ColorAnimation { duration: 280; easing.type: Easing.InOutQuad } }
             Behavior on outlineWidth { NumberAnimation { duration: 260; easing.type: Easing.InOutQuad } }
             Behavior on outlineColor { ColorAnimation { duration: 260; easing.type: Easing.InOutQuad } }
