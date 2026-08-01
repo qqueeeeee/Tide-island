@@ -255,11 +255,11 @@ private:
     int m_hoverExpandAction = 1;
     bool m_islandAutoHideEnabled = true;
     int m_islandAutoHideDelayMs = 1000;
-    int m_islandWidth = 140;
-    int m_islandBackgroundOpacity = 60;
-    int m_islandHeight = 38;
+    int m_islandWidth = 125;
+    int m_islandBackgroundOpacity = 100;
+    int m_islandHeight = 37;
     int m_islandExclusiveZone = 45;
-    int m_islandTopMargin = 4;
+    int m_islandTopMargin = 11;
     int m_islandPositionX = 50;
     int m_bodyFontSize = 16;
     int m_titleFontSize = 20;

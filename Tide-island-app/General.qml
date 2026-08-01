@@ -106,7 +106,7 @@ PagePanel {
                         title: "Island Width"
                         description: "Width of island in clock mode"
                         keyName: "islandWidth"
-                        fallbackText: "140"
+                        fallbackText: "125"
                         numeric: true
                         width: parent.width
                     }
@@ -117,7 +117,7 @@ PagePanel {
                         title: "Island Height"
                         description: "Height of island in clock mode"
                         keyName: "islandHeight"
-                        fallbackText: "38"
+                        fallbackText: "37"
                         numeric: true
                         width: parent.width
                     }
@@ -128,7 +128,7 @@ PagePanel {
                         title: "Background Transparency"
                         description: "Opacity of the island background (0 = fully transparent, 100 = solid)"
                         keyName: "islandBackgroundOpacity"
-                        fallbackText: "60"
+                        fallbackText: "100"
                         numeric: true
                         minimumValue: 0
                         maximumValue: 100
@@ -157,7 +157,7 @@ PagePanel {
                         title: "Top Margin"
                         description: "Distance between the island and the top of the screen"
                         keyName: "islandTopMargin"
-                        fallbackText: "4"
+                        fallbackText: "11"
                         numeric: true
                         minimumValue: 0
                         width: parent.width

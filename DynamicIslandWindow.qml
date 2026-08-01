@@ -226,6 +226,21 @@ PanelWindow {
     readonly property string defaultSplitIcon: "\ud83c\udfa7"
     readonly property string notificationStatusIcon: "\uf0f3"
     readonly property real overviewWindowCornerRadius: 12
+
+    // --- iOS Dynamic Island exact metrics ---
+    // Reference: iPhone 15/16 Pro. Idle pill 125x37pt (radius = height/2, 18.5),
+    // top inset 11pt, expanded Live Activity 371x160pt with a 44pt continuous
+    // corner radius, compact (leading+trailing) pill ~200pt wide.
+    readonly property real iosScale: userConfig.islandHeight / 37.0
+    readonly property real iosCompactWidth: userConfig.islandWidth * (200.0 / 125.0)
+    readonly property real iosExpandedWidth: Math.min(
+        root.width - userConfig.islandTopMargin * 2,
+        userConfig.islandWidth * (371.0 / 125.0)
+    )
+    readonly property real iosExpandedHeight: userConfig.islandHeight * (160.0 / 37.0)
+    readonly property real iosExpandedRadius: 44.0 * iosScale
+    readonly property real iosNotificationHeight: userConfig.islandHeight * (56.0 / 37.0)
+    readonly property var iosMorphCurve: [0.32, 0.72, 0.0, 1.0, 1.0, 1.0]
     readonly property int dynamicIslandAcceptedButtons: userConfig.mouseButtonsMask([
         1,
         userConfig.dynamicIslandPrimaryButton,
@@ -873,8 +888,8 @@ PanelWindow {
         property string splitOriginSide: "none"
         property string restingState: "normal"
         property bool expandedByPlayerAutoOpen: false
-        property real customCapsuleWidth: 220
-        property real lyricsCapsuleWidth: 220
+        property real customCapsuleWidth: root.iosCompactWidth
+        property real lyricsCapsuleWidth: root.iosCompactWidth
         property bool sideSwipeSettling: false
         property bool hoverExpandedActive: false
         property bool expandedPlayerKeyboardFocusRequested: false
@@ -910,7 +925,9 @@ PanelWindow {
         readonly property bool splitShowsText: islandState === "split" && osdProgress < 0 && osdCustomText !== ""
         readonly property bool splitShowsIconOnly: islandState === "split" && osdProgress < 0 && osdCustomText === ""
         readonly property bool splitUsesExtendedLayout: splitShowsProgress || splitShowsText
-        readonly property real splitCapsuleWidth: splitShowsProgress ? 248 : (splitShowsText ? 220 : userConfig.islandWidth)
+        readonly property real splitCapsuleWidth: splitShowsProgress
+            ? root.iosCompactWidth * 1.24
+            : (splitShowsText ? root.iosCompactWidth : userConfig.islandWidth)
         readonly property bool canShowSideSwipe: islandState === "normal"
             || islandState === "custom"
             || islandState === "lyrics"
@@ -1837,7 +1854,7 @@ PanelWindow {
         Rectangle {
             id: mainCapsule
             z: 5
-            property int morphDuration: 400
+            property int morphDuration: 460
             readonly property bool notificationHistorySurface: islandContainer.islandState === "notification_center"
             property real outlineWidth: root.overviewContentVisible || notificationHistorySurface ? 1 : 0
             property color outlineColor: root.overviewContentVisible
@@ -1862,29 +1879,29 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "capture_recording":
-                    return Math.max(userConfig.islandWidth, 200);
+                    return Math.max(userConfig.islandWidth, root.iosCompactWidth);
                 case "capture_screenshot":
-                    return 410;
+                    return root.iosExpandedWidth;
                 case "split":
                     return islandContainer.splitCapsuleWidth;
                 case "long_capsule":
-                    return 220;
+                    return root.iosCompactWidth;
                 case "custom":
                     return islandContainer.customCapsuleWidth;
                 case "lyrics":
                     return islandContainer.lyricsCapsuleWidth;
                 case "control_center":
-                    return 420;
+                    return root.iosExpandedWidth;
                 case "notification_center":
-                    return 410;
+                    return root.iosExpandedWidth;
                 case "wallpaper_picker":
                 case "application_launcher":
                     return 1100;
                 case "expanded":
                 case "bluetooth_expanded":
-                    return 410;
+                    return root.iosExpandedWidth;
                 case "notification":
-                    if (!notificationLoader.item) return 272;
+                    if (!notificationLoader.item) return root.iosCompactWidth;
                     return Math.max(
                         notificationLoader.item.minimumWidth,
                         Math.min(root.width - 48, notificationLoader.item.maximumWidth, notificationLoader.item.preferredWidth)
@@ -1898,9 +1915,9 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "capture_screenshot":
-                    return 165;
+                    return root.iosExpandedHeight;
                 case "control_center":
-                    return 320 + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterExtraHeight : 32);
+                    return root.iosExpandedHeight * 2 + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterExtraHeight : 32);
                 case "notification_center":
                     return notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 200;
                 case "wallpaper_picker":
@@ -1908,11 +1925,11 @@ PanelWindow {
                     return 260;
                 case "expanded":
                 case "bluetooth_expanded":
-                    return 165;
+                    return root.iosExpandedHeight;
                 case "notification":
                     return notificationLoader.item
-                        ? Math.max(56, notificationLoader.item.preferredHeight)
-                        : 56;
+                        ? Math.max(root.iosNotificationHeight, notificationLoader.item.preferredHeight)
+                        : root.iosNotificationHeight;
                 default:
                     return userConfig.islandHeight;
                 }
@@ -1922,19 +1939,21 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "capture_screenshot":
-                    return 40;
+                    return root.iosExpandedRadius;
                 case "control_center":
-                    return 34;
+                    return root.iosExpandedRadius;
                 case "notification_center":
-                    return mainCapsule.targetHeight * 40 / 165;
+                    return Math.min(root.iosExpandedRadius, mainCapsule.targetHeight * 0.275);
                 case "wallpaper_picker":
                 case "application_launcher":
-                    return 34;
+                    return root.iosExpandedRadius;
                 case "expanded":
                 case "bluetooth_expanded":
-                    return 40;
+                    return root.iosExpandedRadius;
                 case "notification":
-                    return islandContainer.notificationExpanded ? 28 : mainCapsule.targetHeight / 2;
+                    return islandContainer.notificationExpanded
+                        ? Math.min(root.iosExpandedRadius, mainCapsule.targetHeight * 0.275)
+                        : mainCapsule.targetHeight / 2;
                 default:
                     return userConfig.islandHeight / 2;
                 }
@@ -1973,7 +1992,8 @@ PanelWindow {
             Behavior on displayedWidth  {
                 NumberAnimation {
                     duration: capsuleMouseArea.sideSwipeInteractive ? 0 : mainCapsule.morphDuration
-                    easing.type: Easing.OutQuint
+                    easing.type: Easing.Bezier
+                    easing.bezierCurve: root.iosMorphCurve
                 }
             }
             Behavior on height {
@@ -1981,10 +2001,17 @@ PanelWindow {
 
                 NumberAnimation {
                     duration: mainCapsule.morphDuration
-                    easing.type: Easing.OutQuint
+                    easing.type: Easing.Bezier
+                    easing.bezierCurve: root.iosMorphCurve
                 }
             }
-            Behavior on radius { NumberAnimation { duration: mainCapsule.morphDuration; easing.type: Easing.OutQuint } }
+            Behavior on radius {
+                NumberAnimation {
+                    duration: mainCapsule.morphDuration
+                    easing.type: Easing.Bezier
+                    easing.bezierCurve: root.iosMorphCurve
+                }
+            }
             Behavior on color { ColorAnimation { duration: 280; easing.type: Easing.InOutQuad } }
             Behavior on outlineWidth { NumberAnimation { duration: 260; easing.type: Easing.InOutQuad } }
             Behavior on outlineColor { ColorAnimation { duration: 260; easing.type: Easing.InOutQuad } }
