@@ -51,25 +51,30 @@ Item {
     readonly property real sideMargin: userConfig.statusBarSideMargin
     readonly property real contentGap: 14
     readonly property real barOpacity: Math.max(0, Math.min(1, userConfig.statusBarOpacity / 100))
-    readonly property real islandYieldProgress: userConfig.statusBarFadeWithIsland && islandBusy ? 1 : 0
+    // macOS behaviour: bar content never disappears when the island grows, it just
+    // dims a touch so the island reads as the focused surface.
+    readonly property real islandDimProgress: userConfig.statusBarFadeWithIsland && islandBusy ? 0.4 : 0
     readonly property real capsuleLeft: capsuleX
     readonly property real capsuleRight: capsuleX + capsuleWidth
 
     // Available room between the screen edge and the capsule, per side.
     readonly property real leftAvailable: Math.max(0, capsuleLeft - sideMargin - contentGap)
     readonly property real rightAvailable: Math.max(0, root.width - capsuleRight - sideMargin - contentGap)
+    // Only when a side is physically squeezed shut do we retreat that cluster.
+    readonly property real minimumClusterRoom: 36
 
     readonly property real baselineY: capsuleY + capsuleHeight / 2
-    readonly property real slideDistance: 10
+    readonly property real slideDistance: 6
+
 
     // Input hitboxes exported to the window's layer-shell input mask.
-    readonly property bool leftInputActive: visible && leftCluster.opacity > 0.6
+    readonly property bool leftInputActive: visible && leftCluster.opacity > 0.3
     readonly property real leftInputX: leftCluster.x
     readonly property real leftInputY: leftCluster.y
     readonly property real leftInputWidth: leftInputActive ? leftCluster.width : 0
     readonly property real leftInputHeight: leftInputActive ? Math.max(leftCluster.height, 18) : 0
 
-    readonly property bool rightInputActive: visible && rightCluster.opacity > 0.6
+    readonly property bool rightInputActive: visible && rightCluster.opacity > 0.3
     readonly property real rightInputX: rightCluster.x
     readonly property real rightInputY: rightCluster.y
     readonly property real rightInputWidth: rightInputActive ? rightCluster.width : 0
@@ -90,8 +95,8 @@ Item {
     Row {
         id: leftCluster
 
-        readonly property bool crowded: implicitWidth > root.leftAvailable
-        readonly property real hideProgress: Math.max(root.islandYieldProgress, crowded ? 1 : 0)
+        readonly property bool squeezed: root.leftAvailable < root.minimumClusterRoom
+        readonly property real hideProgress: squeezed ? 1 : root.islandDimProgress
 
         x: root.sideMargin - hideProgress * root.slideDistance
         y: root.baselineY - height / 2
@@ -110,7 +115,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             workspaceIds: root.workspaceIds
             currentWorkspace: root.currentWorkspace
-            interactive: root.workspacesInteractive && leftCluster.opacity > 0.6
+            interactive: root.workspacesInteractive && leftCluster.opacity > 0.3
             onFocusRequested: function(workspaceId) { root.workspaceFocusRequested(workspaceId); }
         }
 
@@ -127,8 +132,8 @@ Item {
     Row {
         id: rightCluster
 
-        readonly property bool crowded: implicitWidth > root.rightAvailable
-        readonly property real hideProgress: Math.max(root.islandYieldProgress, crowded ? 1 : 0)
+        readonly property bool squeezed: root.rightAvailable < root.minimumClusterRoom
+        readonly property real hideProgress: squeezed ? 1 : root.islandDimProgress
 
         x: root.width - root.sideMargin - width + hideProgress * root.slideDistance
         y: root.baselineY - height / 2
@@ -162,7 +167,7 @@ Item {
             isCharging: root.isCharging
             isMuted: root.isMuted
             onActivated: {
-                if (rightCluster.opacity > 0.6)
+                if (rightCluster.opacity > 0.3)
                     root.statusClusterActivated();
             }
         }
@@ -179,7 +184,7 @@ Item {
 
             HoverHandler {
                 id: clockHover
-                enabled: root.userConfig.statusBarShowDateOnHover && rightCluster.opacity > 0.6
+                enabled: root.userConfig.statusBarShowDateOnHover && rightCluster.opacity > 0.3
             }
         }
     }
