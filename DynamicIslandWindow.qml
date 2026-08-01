@@ -946,6 +946,31 @@ PanelWindow {
         property bool autoHideLifeVisible: false
         readonly property int autoHideLifeMinimumInterval: 1500
 
+        // --- Interaction / micro-interaction state ------------------------
+        // Whole-shape feedback: pressing sinks the capsule, an in-place content
+        // update (new track, new glance value) gives it one quick pulse.
+        property bool capsulePressed: false
+        property real capsulePulse: 0
+        // Springs on its own so the press sink shares the shape's motion feel.
+        property real pressScaleValue: capsulePressed ? islandMotion.pressScale : 1
+        readonly property real interactionScale: pressScaleValue
+            * (1 + capsulePulse * (islandMotion.pulseScale - 1))
+
+        Behavior on pressScaleValue {
+            SpringAnimation {
+                spring: islandMotion.buttonSpring
+                damping: islandMotion.buttonDamping
+                epsilon: 0.002
+            }
+        }
+
+
+        // Transient notifications queue instead of overlapping each other, the
+        // way iOS serialises Live Activity alerts.
+        property var pendingNotifications: []
+        property var queuedNotification: null
+
+
         readonly property int defaultAutoHideInterval: 1250
         readonly property int notificationAutoHideInterval: 4200
         readonly property int bluetoothExpandedAutoHideInterval: 2500
@@ -994,6 +1019,23 @@ PanelWindow {
         }
         readonly property bool liveMediaLayerVisible: !root.overviewVisible && islandState === "live_media"
         readonly property bool liveTimerLayerVisible: !root.overviewVisible && islandState === "live_timer"
+
+        // --- Idle (nothing live) ------------------------------------------
+        // Idle content is a config value, not a layout decision. Default is the
+        // authentic empty, slowly breathing pill.
+        IslandIdleConfig { id: idleConfig }
+
+        readonly property string idleContent: idleConfig.idleContent
+        readonly property bool idleLayerVisible: !root.overviewVisible && islandState === "normal"
+        readonly property bool idleBreathing: idleLayerVisible
+            && idleConfig.idleBreathes
+            && root.autoHideProgress > 0.99
+        // Legacy bar-style clock text inside the swipe layer only survives if
+        // the user explicitly asked for the clock idle mode.
+        readonly property bool idleShowsClockText: idleConfig.idleShowsClockText
+        // Breathing idle draws nothing at all, so the layer is not even mounted.
+        readonly property bool idleConfigIsBreathing: idleConfig.idleBreathes
+
 
         onMediaLiveChanged: {
             mediaLiveOrder = mediaLive ? ++liveActivityOrderCounter : 0;
@@ -1675,6 +1717,44 @@ PanelWindow {
             restartAutoHideTimer();
         }
 
+        // One quick whole-shape pulse. Used for in-place content updates (new
+        // track, new glance value) that must NOT expand the island.
+        function pulseCapsule() {
+            capsulePulseAnimation.restart();
+        }
+
+        function recordNotificationHistory(appName, summary, body) {
+            if (!notificationHistoryModel) return;
+            notificationHistoryModel.insert(0, {
+                appName: appName,
+                summary: summary,
+                body: body,
+                timestamp: new Date()
+            });
+            if (notificationHistoryModel.count > 50)
+                notificationHistoryModel.remove(50, notificationHistoryModel.count - 50);
+        }
+
+        // A transient alert is already on screen: never stack two, queue it.
+        function enqueueNotification(entry) {
+            const queue = pendingNotifications.slice();
+            queue.push(entry);
+            if (queue.length > 8)
+                queue.splice(0, queue.length - 8);
+            pendingNotifications = queue;
+        }
+
+        // Called once the current transient alert has collapsed back onto the
+        // resting state. Returns true when another alert was started.
+        function drainPendingNotification() {
+            if (pendingNotifications.length === 0) return false;
+            const queue = pendingNotifications.slice();
+            queuedNotification = queue.shift();
+            pendingNotifications = queue;
+            notificationQueueTimer.restart();
+            return true;
+        }
+
         function showNotificationCapsule(appName, summary, body) {
             if (root.overviewVisible || islandState === "control_center" || islandState === "expanded") return;
 
@@ -1684,28 +1764,31 @@ PanelWindow {
             const resolvedSummary = cleanedSummary !== ""
                 ? cleanedSummary
                 : (cleanedBody !== "" ? cleanedBody : "New notification");
+            const resolvedAppName = cleanedAppName !== "" ? cleanedAppName : "Notification";
+            const resolvedBody = cleanedSummary !== "" ? cleanedBody : "";
+
+            recordNotificationHistory(resolvedAppName, resolvedSummary, resolvedBody);
+
+            // Priority stacking: hold this one until the visible alert is done.
+            if (islandState === "notification" || notificationQueueTimer.running) {
+                enqueueNotification({
+                    appName: resolvedAppName,
+                    summary: resolvedSummary,
+                    body: resolvedBody
+                });
+                return;
+            }
 
             abortSideTransientMode();
             clearTransientCapsule();
-            notificationAppName = cleanedAppName !== "" ? cleanedAppName : "Notification";
+            notificationAppName = resolvedAppName;
             notificationSummary = resolvedSummary;
-            notificationBody = cleanedSummary !== "" ? cleanedBody : "";
+            notificationBody = resolvedBody;
             notificationExpanded = false;
             islandState = "notification";
             restartAutoHideTimer(notificationAutoHideInterval);
-            // Store in notification history
-                if (notificationHistoryModel) {
-                    notificationHistoryModel.insert(0, {
-                        appName: cleanedAppName !== "" ? cleanedAppName : "Notification",
-                        summary: resolvedSummary,
-                        body: cleanedSummary !== "" ? cleanedBody : "",
-                        timestamp: new Date()
-                    });
-                    if (notificationHistoryModel.count > 50)
-                        notificationHistoryModel.remove(50, notificationHistoryModel.count - 50);
-                }
-
         }
+
 
         function showCaptureRecording() {
             if (root.overviewVisible) return;
@@ -1802,6 +1885,18 @@ PanelWindow {
             else stopAutoHideTimer();
         }
 
+        // Only compact live activities have a bigger card worth opening; this
+        // is what a deliberate long press (or tap toggle) resolves to.
+        readonly property bool canExpandRestingActivity: !root.overviewVisible
+            && (islandState === "live_media" || islandState === "live_timer")
+
+        function expandRestingActivity() {
+            if (!canExpandRestingActivity) return;
+            // User-initiated, so never auto-collapse on a timeout.
+            showExpandedPlayer(false);
+        }
+
+
         function showBluetoothExpanded(device) {
             if (!device || root.overviewVisible || islandState === "control_center" || islandState === "notification")
                 return;
@@ -1885,7 +1980,69 @@ PanelWindow {
             restartAutoHideTimer();
         }
 
-        Timer { id: autoHideTimer; interval: islandContainer.defaultAutoHideInterval; onTriggered: islandContainer.smartRestoreState() }
+        Timer {
+            id: autoHideTimer
+
+            interval: islandContainer.defaultAutoHideInterval
+            onTriggered: {
+                const wasNotification = islandContainer.islandState === "notification";
+                islandContainer.smartRestoreState();
+                if (wasNotification)
+                    islandContainer.drainPendingNotification();
+            }
+        }
+
+        // Queued alerts wait for the capsule to settle back onto the resting
+        // state before the next one takes over, so two alerts never overlap.
+        Timer {
+            id: notificationQueueTimer
+
+            interval: islandMotion.settleDuration + 120
+            repeat: false
+            onTriggered: {
+                const entry = islandContainer.queuedNotification;
+                islandContainer.queuedNotification = null;
+                if (!entry) return;
+                if (root.overviewVisible
+                        || islandContainer.islandState === "control_center"
+                        || islandContainer.islandState === "expanded") {
+                    return;
+                }
+
+                islandContainer.abortSideTransientMode();
+                islandContainer.clearTransientCapsule();
+                islandContainer.notificationAppName = entry.appName;
+                islandContainer.notificationSummary = entry.summary;
+                islandContainer.notificationBody = entry.body;
+                islandContainer.notificationExpanded = false;
+                islandContainer.islandState = "notification";
+                islandContainer.restartAutoHideTimer(islandContainer.notificationAutoHideInterval);
+            }
+        }
+
+        // Single quick acknowledgement pulse — same spring family as the morph.
+        SequentialAnimation {
+            id: capsulePulseAnimation
+
+            NumberAnimation {
+                target: islandContainer
+                property: "capsulePulse"
+                to: 1
+                duration: islandMotion.pulseAttackDuration
+                easing.type: Easing.OutCubic
+            }
+
+            SpringAnimation {
+                target: islandContainer
+                property: "capsulePulse"
+                to: 0
+                spring: islandMotion.shapeSpring
+                damping: islandMotion.shapeDamping
+                mass: islandMotion.shapeMass
+                epsilon: 0.01
+            }
+        }
+
 
         NumberAnimation {
             id: autoHideLifeAnimation
@@ -1981,17 +2138,16 @@ PanelWindow {
             lyricsCapsuleWidth = Math.max(220, Math.min(root.width - 48, view.preferredWidth));
         }
 
+        // Ongoing media is never a reason to expand. A new track while the
+        // compact pill is already up is acknowledged in place: the layer
+        // cross-fades its art and the capsule gives one quick pulse.
         onCurrentTrackChanged: {
-            if (userConfig.disableAutoExpandOnTrackChange) return;
-            if (currentTrack !== ""
-                    && islandState !== "control_center"
-                    && islandState !== "notification"
-                    && islandState !== "bluetooth_expanded") {
-                if (root.autoHideSuppressesTransientReveal) return;
-                if (islandState === "expanded" && !expandedByPlayerAutoOpen) return;
-                showExpandedPlayer(true);
-            }
+            if (currentTrack === "") return;
+            if (root.autoHideSuppressesTransientReveal) return;
+            if (islandState !== "live_media") return;
+            pulseCapsule();
         }
+
 
         // macOS notch shoulders: the concave fillets that blend the notch into
         // the surrounding bezel, drawn in the capsule colour on both sides.
@@ -2233,9 +2389,74 @@ PanelWindow {
                 ? Math.min(root.overviewCapsuleRadius, height / 2)
                 : root.capsuleRadiusForHeight(height)
 
-            opacity: root.autoHideProgress
-            scale: 0.96 + root.autoHideProgress * 0.04
+            // Idle breath: a barely perceptible several-second loop that only
+            // runs while the island is genuinely idle and fully shown.
+            property real idleBreathScale: 1
+            property real idleBreathOpacity: 1
+
+            opacity: root.autoHideProgress * idleBreathOpacity
+            scale: (0.96 + root.autoHideProgress * 0.04)
+                * islandContainer.interactionScale
+                * idleBreathScale
             transformOrigin: Item.Top
+
+            SequentialAnimation {
+                id: idleBreathAnimation
+
+                running: islandContainer.idleBreathing
+                loops: Animation.Infinite
+                alwaysRunToEnd: false
+
+                ParallelAnimation {
+                    NumberAnimation {
+                        target: mainCapsule
+                        property: "idleBreathScale"
+                        to: islandMotion.idleBreathScale
+                        duration: islandMotion.idleBreathDuration
+                        easing.type: Easing.InOutSine
+                    }
+                    NumberAnimation {
+                        target: mainCapsule
+                        property: "idleBreathOpacity"
+                        to: islandMotion.idleBreathOpacity
+                        duration: islandMotion.idleBreathDuration
+                        easing.type: Easing.InOutSine
+                    }
+                }
+
+                ParallelAnimation {
+                    NumberAnimation {
+                        target: mainCapsule
+                        property: "idleBreathScale"
+                        to: 1
+                        duration: islandMotion.idleBreathDuration
+                        easing.type: Easing.InOutSine
+                    }
+                    NumberAnimation {
+                        target: mainCapsule
+                        property: "idleBreathOpacity"
+                        to: 1
+                        duration: islandMotion.idleBreathDuration
+                        easing.type: Easing.InOutSine
+                    }
+                }
+
+                onRunningChanged: {
+                    if (running) return;
+                    idleBreathSettle.restart();
+                }
+            }
+
+            NumberAnimation {
+                id: idleBreathSettle
+
+                target: mainCapsule
+                properties: "idleBreathScale,idleBreathOpacity"
+                to: 1
+                duration: 220
+                easing.type: Easing.OutCubic
+            }
+
 
             // macOS notch: square off the two top corners so the capsule is
             // welded to the top bezel instead of floating like the iOS pill.
@@ -2372,12 +2593,29 @@ PanelWindow {
                 property bool suppressNextClick: false
                 property bool preparedOverviewOnPress: false
 
+                property bool longPressTriggered: false
+
                 Timer {
                     id: swipeSuppressReset
                     interval: 180
                     repeat: false
                     onTriggered: capsuleMouseArea.suppressNextClick = false
                 }
+
+                // Short click = compact peek / configured action.
+                // Long press  = go straight to the full expanded card.
+                Timer {
+                    id: longPressTimer
+
+                    interval: islandMotion.longPressInterval
+                    repeat: false
+                    onTriggered: {
+                        if (capsuleMouseArea.swipeMoved) return;
+                        capsuleMouseArea.longPressTriggered = true;
+                        islandContainer.expandRestingActivity();
+                    }
+                }
+
 
                 onEntered: {
                     if (root.autoHideEnabled) {
@@ -2412,6 +2650,13 @@ PanelWindow {
                     sideSwipeInteractive = swipeArmed;
                     islandContainer.swipeTransitionProgress = swipeStartProgress;
 
+                    // Whole-shape press feedback, plus long-press arming.
+                    islandContainer.capsulePressed = true;
+                    longPressTriggered = false;
+                    if (mouse.button === Qt.LeftButton && islandContainer.canExpandRestingActivity)
+                        longPressTimer.restart();
+
+
                     let pressedAction = "";
                     if (mouse.button === userConfig.mouseButton(userConfig.dynamicIslandPrimaryButton)) {
                         pressedAction = userConfig.dynamicIslandPrimaryAction;
@@ -2438,13 +2683,24 @@ PanelWindow {
                     );
 
                     swipeMoved = swipeMoved || Math.abs(nextProgress - swipeStartProgress) > 0.03 || deltaY > 6;
+                    if (swipeMoved)
+                        longPressTimer.stop();
                     swipeLastX = mappedPoint.x;
                     islandContainer.swipeTransitionProgress = nextProgress;
                     mainCapsule.displayedWidth = mainCapsule.sideSwipePreviewWidth;
+
                 }
 
                 onReleased: {
+                    islandContainer.capsulePressed = false;
+                    longPressTimer.stop();
+                    if (longPressTriggered) {
+                        // The long press already acted; swallow the click.
+                        suppressNextClick = true;
+                        swipeSuppressReset.restart();
+                    }
                     if (swipeMoved) {
+
                         if (preparedOverviewOnPress)
                             root.cancelPreparedOverviewEverywhere();
                         preparedOverviewOnPress = false;
@@ -2492,9 +2748,13 @@ PanelWindow {
                 }
 
                 onCanceled: {
+                    islandContainer.capsulePressed = false;
+                    longPressTimer.stop();
+                    longPressTriggered = false;
                     if (preparedOverviewOnPress)
                         root.cancelPreparedOverviewEverywhere();
                     swipeArmed = false;
+
                     swipeMoved = false;
                     sideSwipeInteractive = false;
                     suppressNextClick = false;
@@ -2662,8 +2922,12 @@ PanelWindow {
                         maximumWidth: Math.max(220, root.width - 48)
                         transitionProgress: islandContainer.rightSwipeProgress
                         recordingActive: islandContainer.screenRecordingActive
+                        // The idle capsule no longer carries a bar-style clock:
+                        // idle content is owned by IslandIdleLayer and is empty
+                        // unless the "clock" idle mode is configured.
                         showSecondaryText: islandContainer.workspaceOriginSide !== "right"
                             && islandContainer.splitOriginSide !== "right"
+                            && islandContainer.idleShowsClockText
                         showCondition: true
                         onPreferredWidthChanged: islandContainer.syncLyricsCapsuleWidth()
                     }
@@ -2733,6 +2997,21 @@ PanelWindow {
                     }
                 }
             }
+
+            Loader {
+                id: idleLoader
+
+                anchors.fill: parent
+                active: islandContainer.idleLayerVisible && !islandContainer.idleConfigIsBreathing
+                asynchronous: false
+                sourceComponent: IslandIdleLayer {
+                    idleContent: islandContainer.idleContent
+                    currentTime: timeObj.currentTime
+                    textFontFamily: root.textFontFamily
+                    showCondition: islandContainer.idleLayerVisible
+                }
+            }
+
 
             Loader {
                 id: liveMediaLoader

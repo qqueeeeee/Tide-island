@@ -3,8 +3,10 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import IslandBackend
 
-// Compact timer live activity: progress ring + remaining time. Like the media
-// layer this is a resting state, held for as long as the timer runs.
+// Compact timer live activity — dual compact layout: progress ring pinned left,
+// live countdown pinned right. Like the media layer this is a resting state: it
+// is held for as long as the timer runs and never auto-expands mid-countdown.
+// Only the *completion* of the timer is an urgent, momentary event.
 Item {
     id: root
 
@@ -38,55 +40,60 @@ Item {
         active: root.showCondition
     }
 
-    Row {
-        anchors.centerIn: parent
-        spacing: 9
+    IslandDualCompact {
+        horizontalPadding: 12
 
-        Canvas {
-            id: ring
+        leftItem: Component {
+            Canvas {
+                id: ring
 
-            anchors.verticalCenter: parent.verticalCenter
-            width: 18
-            height: 18
-            opacity: root.running ? 1 : 0.55
+                width: 18
+                height: 18
+                opacity: root.running ? 1 : 0.55
 
-            onPaint: {
-                const ctx = getContext("2d");
-                ctx.reset();
-                const center = width / 2;
-                const radius = center - 1.5;
+                Connections {
+                    target: root
 
-                ctx.lineWidth = 2.4;
-                ctx.strokeStyle = "#3a3a3a";
-                ctx.beginPath();
-                ctx.arc(center, center, radius, 0, Math.PI * 2);
-                ctx.stroke();
+                    function onProgressChanged() { ring.requestPaint(); }
+                    function onRunningChanged() { ring.requestPaint(); }
+                    function onShowConditionChanged() { ring.requestPaint(); }
+                }
 
-                const sweep = Math.max(0, Math.min(1, root.progress)) * Math.PI * 2;
-                if (sweep <= 0)
-                    return;
+                onPaint: {
+                    const ctx = getContext("2d");
+                    ctx.reset();
+                    const center = width / 2;
+                    const radius = center - 1.5;
 
-                ctx.strokeStyle = "#ff9f0a";
-                ctx.lineCap = "round";
-                ctx.beginPath();
-                ctx.arc(center, center, radius, -Math.PI / 2, -Math.PI / 2 + sweep);
-                ctx.stroke();
+                    ctx.lineWidth = 2.4;
+                    ctx.strokeStyle = "#3a3a3a";
+                    ctx.beginPath();
+                    ctx.arc(center, center, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    const sweep = Math.max(0, Math.min(1, root.progress)) * Math.PI * 2;
+                    if (sweep <= 0)
+                        return;
+
+                    ctx.strokeStyle = "#ff9f0a";
+                    ctx.lineCap = "round";
+                    ctx.beginPath();
+                    ctx.arc(center, center, radius, -Math.PI / 2, -Math.PI / 2 + sweep);
+                    ctx.stroke();
+                }
             }
         }
 
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: root.remainingText
-            color: "#ffffff"
-            opacity: root.running ? 1 : 0.6
-            font.family: root.textFontFamily
-            font.pixelSize: root.userConfig.bodyFontSize
-            font.weight: Font.DemiBold
-            font.letterSpacing: 0.4
+        rightItem: Component {
+            Text {
+                text: root.remainingText
+                color: "#ffffff"
+                opacity: root.running ? 1 : 0.6
+                font.family: root.textFontFamily
+                font.pixelSize: root.userConfig.bodyFontSize
+                font.weight: Font.DemiBold
+                font.letterSpacing: 0.4
+            }
         }
     }
-
-    onProgressChanged: ring.requestPaint()
-    onRunningChanged: ring.requestPaint()
-    onShowConditionChanged: ring.requestPaint()
 }

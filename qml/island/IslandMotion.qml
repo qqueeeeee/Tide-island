@@ -49,4 +49,20 @@ Item {
     readonly property real buttonSpring: 6.0
     readonly property real buttonDamping: 0.35
     readonly property int buttonColorDuration: 140
+
+    // The whole capsule reacts to being touched, not just its contents: press
+    // sinks it slightly, an in-place content update gives it a single quick
+    // pulse. Both ride the same spring family as the shape morph so nothing
+    // feels bolted on.
+    readonly property real pressScale: 0.972
+    readonly property real pulseScale: 1.05
+    readonly property int pulseAttackDuration: 120
+    readonly property int longPressInterval: 420
+
+    // --- Idle breath -------------------------------------------------------
+    // Barely-there life sign for the empty idle pill: several seconds per cycle,
+    // ~1% of scale. If you can see it happening it is too strong.
+    readonly property real idleBreathScale: 1.012
+    readonly property real idleBreathOpacity: 0.93
+    readonly property int idleBreathDuration: 2600
 }

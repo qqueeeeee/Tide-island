@@ -104,13 +104,87 @@ Item {
         timerLiveOrder = value ? ++liveActivityOrderCounter : 0;
         syncLiveActivityResting();
     }
-    function showNotification() { islandState = "notification"; }
-    function autoHideFired() { restoreRestingCapsule(true); }
+    // --- Transient alert queueing (from DynamicIslandWindow.qml) -----------
+    property var pendingNotifications: []
+    property var queuedNotification: null
+    property int pulseCount: 0
+    property bool mediaPlaying: false
+    property string currentTrack: ""
+
+    function pulseCapsule() { pulseCount = pulseCount + 1; }
+
+    function enqueueNotification(entry) {
+        const queue = pendingNotifications.slice();
+        queue.push(entry);
+        if (queue.length > 8)
+            queue.splice(0, queue.length - 8);
+        pendingNotifications = queue;
+    }
+
+    function drainPendingNotification() {
+        if (pendingNotifications.length === 0) return false;
+        const queue = pendingNotifications.slice();
+        queuedNotification = queue.shift();
+        pendingNotifications = queue;
+        return true;
+    }
+
+    function showNotification(summary) {
+        if (islandState === "notification" || queuedNotification !== null) {
+            enqueueNotification({ summary: summary === undefined ? "" : summary });
+            return;
+        }
+        notificationSummary = summary === undefined ? "" : summary;
+        islandState = "notification";
+    }
+    property string notificationSummary: ""
+
+    // The queue timer's job, minus the delay.
+    function presentQueuedNotification() {
+        const entry = queuedNotification;
+        queuedNotification = null;
+        if (!entry) return;
+        notificationSummary = entry.summary;
+        islandState = "notification";
+    }
+
+    function autoHideFired() {
+        const wasNotification = islandState === "notification";
+        restoreRestingCapsule(true);
+        if (wasNotification)
+            drainPendingNotification();
+    }
+
+    // Ongoing media never expands itself: pause/resume/track change only ever
+    // touch content, and only a deliberate long press opens the card.
+    function setPlaying(value) {
+        mediaPlaying = value;
+        setMediaLive(true);
+    }
+
+    function changeTrack(title) {
+        currentTrack = title;
+        if (islandState !== "live_media") return;
+        pulseCapsule();
+    }
+
+    readonly property bool canExpandRestingActivity:
+        islandState === "live_media" || islandState === "live_timer"
+
+    function expandRestingActivity() {
+        if (!canExpandRestingActivity) return;
+        islandState = "expanded";
+    }
 
     function check(label, actual, expected) {
         const ok = actual === expected;
         console.log((ok ? "PASS  " : "FAIL  ") + label + " => " + actual + (ok ? "" : " (expected " + expected + ")"));
-        if (!ok) Qt.exit(1);
+        // Qt.exit does not stop execution, so bail out of the whole run too,
+        // otherwise a later Qt.exit(0) would mask the failure exit code.
+        if (!ok) {
+            Qt.exit(1);
+            throw new Error("assertion failed: " + label);
+        }
     }
 
     Component.onCompleted: {
@@ -162,6 +236,44 @@ Item {
         restingState = "lyrics";
         restoreRestingCapsule(true);
         check("lyrics resting honoured", islandState, "lyrics");
+
+        // 8) ongoing media never expands on its own
+        restingState = "normal";
+        setMediaLive(false);
+        restoreRestingCapsule(true);
+        setPlaying(true);
+        check("play start -> compact, not expanded", islandState, "live_media");
+        setPlaying(false);
+        check("pause stays compact", islandState, "live_media");
+        setPlaying(true);
+        check("resume stays compact", islandState, "live_media");
+
+        const pulsesBefore = pulseCount;
+        changeTrack("Next Song");
+        check("track change stays compact", islandState, "live_media");
+        check("track change pulses instead", pulseCount, pulsesBefore + 1);
+
+        // 9) only a deliberate long press / tap opens the full card
+        expandRestingActivity();
+        check("long press expands", islandState, "expanded");
+        restoreRestingCapsule(true);
+        check("collapse returns to playing media", islandState, "live_media");
+
+        // 10) a second alert queues instead of overlapping
+        showNotification("first");
+        check("first alert shows", notificationSummary, "first");
+        showNotification("second");
+        check("second alert queued, not shown", notificationSummary, "first");
+        check("queue holds one", pendingNotifications.length, 1);
+        autoHideFired();
+        check("collapses to media between alerts", islandState, "live_media");
+        presentQueuedNotification();
+        check("queued alert shown next", notificationSummary, "second");
+        check("queue drained", pendingNotifications.length, 0);
+        autoHideFired();
+        check("final collapse back to media", islandState, "live_media");
+        setMediaLive(false);
+        check("media ends -> idle", islandState, "normal");
 
         console.log("ALL PASS");
         Qt.exit(0);
