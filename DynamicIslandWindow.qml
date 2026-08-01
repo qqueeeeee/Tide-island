@@ -955,7 +955,59 @@ PanelWindow {
             : 0
         readonly property bool timerBubbleWanted: (timerActive && timerRemainingSeconds > 0 || timerCompletionAnimating)
             && !root.overviewVisible
-            && (islandState === "normal" || islandState === "lyrics" || islandState === "custom")
+            && (islandState === "normal" || islandState === "lyrics" || islandState === "custom"
+                || islandState === "live_media")
+
+        // --- Live activities vs. transient content ------------------------
+        // A live activity is state tied to something genuinely ongoing (music,
+        // a running timer, a recording). While one is alive it *owns* the
+        // resting capsule: the island shows its compact view instead of the
+        // clock, and it is never dismissed on a timer. Transient content
+        // (notifications, OSDs, toasts) briefly overlays the resting state and
+        // then collapses back to whatever is live at that moment.
+        readonly property bool mediaLive: mediaController.mediaLive
+        readonly property bool mediaPlaying: mediaController.mediaPlaying
+        readonly property bool timerLive: timerActive && timerRemainingSeconds > 0
+        readonly property bool recordingLive: root.screenRecordingActive
+        // Deterministic priority: most recently started live activity wins, so
+        // music + timer never flicker against each other.
+        property int liveActivityOrderCounter: 0
+        property int mediaLiveOrder: 0
+        property int timerLiveOrder: 0
+        property int recordingLiveOrder: 0
+        readonly property string activeLiveActivity: {
+            let best = "none";
+            let bestOrder = 0;
+            if (recordingLive && recordingLiveOrder > bestOrder) {
+                best = "recording";
+                bestOrder = recordingLiveOrder;
+            }
+            if (timerLive && timerLiveOrder > bestOrder) {
+                best = "timer";
+                bestOrder = timerLiveOrder;
+            }
+            if (mediaLive && mediaLiveOrder > bestOrder) {
+                best = "media";
+                bestOrder = mediaLiveOrder;
+            }
+            return best;
+        }
+        readonly property bool liveMediaLayerVisible: !root.overviewVisible && islandState === "live_media"
+        readonly property bool liveTimerLayerVisible: !root.overviewVisible && islandState === "live_timer"
+
+        onMediaLiveChanged: {
+            mediaLiveOrder = mediaLive ? ++liveActivityOrderCounter : 0;
+            syncLiveActivityResting();
+        }
+        onTimerLiveChanged: {
+            timerLiveOrder = timerLive ? ++liveActivityOrderCounter : 0;
+            syncLiveActivityResting();
+        }
+        onRecordingLiveChanged: {
+            recordingLiveOrder = recordingLive ? ++liveActivityOrderCounter : 0;
+            syncLiveActivityResting();
+        }
+        onActiveLiveActivityChanged: syncLiveActivityResting()
         readonly property bool blocksTransientSplit: islandState === "capture_recording"
             || islandState === "capture_screenshot"
             || islandState === "expanded"
@@ -1233,6 +1285,51 @@ PanelWindow {
             return "normal";
         }
 
+        // Island state that the active live activity renders in its compact
+        // form, or "" when nothing is live.
+        function liveActivityState() {
+            switch (activeLiveActivity) {
+            case "recording":
+                return "capture_recording";
+            case "timer":
+                return "live_timer";
+            case "media":
+                return "live_media";
+            default:
+                return "";
+            }
+        }
+
+        // The single source of truth for "what does the island go back to?".
+        // Everything transient collapses to this, never to a hardcoded idle.
+        function effectiveRestingState() {
+            const liveState = liveActivityState();
+            if (liveState !== "")
+                return liveState;
+            return normalizeRestingState(restingState);
+        }
+
+        function isRestingLikeState(state) {
+            return state === "normal"
+                || state === "custom"
+                || state === "lyrics"
+                || state === "live_media"
+                || state === "live_timer"
+                || state === "capture_recording";
+        }
+
+        // Re-seat the capsule when a live activity starts or ends. If something
+        // transient is on top right now we leave it alone: it re-evaluates the
+        // resting state when it collapses, so an activity that ended meanwhile
+        // correctly falls through to the clock.
+        function syncLiveActivityResting() {
+            if (root.overviewVisible) return;
+            if (!isRestingLikeState(islandState)) return;
+            const target = effectiveRestingState();
+            if (islandState === target) return;
+            restoreRestingCapsule(true);
+        }
+
         function restingStateProgress(nextState) {
             switch (normalizeRestingState(nextState)) {
             case "custom":
@@ -1325,7 +1422,7 @@ PanelWindow {
 
         function applyRestingVisuals() {
             prepareRestingCapsuleGeometry();
-            swipeTransitionProgress = restingStateProgress(restingState);
+            swipeTransitionProgress = restingStateProgress(effectiveRestingState());
         }
 
         function sideSwipeRestProgressForProgress(progressValue) {
@@ -1656,7 +1753,7 @@ PanelWindow {
 
         function restoreRestingCapsule(forceImmediate) {
             if (forceImmediate === undefined) forceImmediate = false;
-            const normalizedRestingState = normalizeRestingState(restingState);
+            const normalizedRestingState = effectiveRestingState();
             const targetSide = restingStateSide(normalizedRestingState);
             const shouldAnimateToSide = targetSide !== "none"
                 && ((islandState === "long_capsule" && workspaceOriginSide === targetSide)
@@ -1827,7 +1924,7 @@ PanelWindow {
                 islandContainer.workspaceOriginSide = "none";
                 islandContainer.splitOriginSide = "none";
                 islandContainer.prepareRestingCapsuleGeometry();
-                islandContainer.islandState = islandContainer.normalizeRestingState(islandContainer.restingState);
+                islandContainer.islandState = islandContainer.effectiveRestingState();
                 islandContainer.clearTransientCapsule();
                 islandContainer.applyRestingVisuals();
                 islandContainer.expandedByPlayerAutoOpen = false;
@@ -1849,7 +1946,8 @@ PanelWindow {
                 const current = islandContainer.islandState;
                 const target = root.configuredHoverExpandAction === 2 ? "control_center" : "expanded";
                 if (current === target) return;
-                if (current !== "normal" && current !== "custom" && current !== "lyrics")
+                if (current !== "normal" && current !== "custom" && current !== "lyrics"
+                        && current !== "live_media" && current !== "live_timer")
                     return;
 
                 islandContainer.hoverExpandedActive = true;
@@ -2041,6 +2139,10 @@ PanelWindow {
                     return islandContainer.splitCapsuleWidth;
                 case "long_capsule":
                     return root.iosCompactWidth;
+                case "live_media":
+                    return Math.max(root.islandRestingWidth, root.iosCompactWidth * 1.1);
+                case "live_timer":
+                    return Math.max(root.islandRestingWidth, root.iosCompactWidth * 0.78);
                 case "custom":
                     return islandContainer.customCapsuleWidth;
                 case "lyrics":
@@ -2628,6 +2730,43 @@ PanelWindow {
                         transitionProgress: islandContainer.swipeTransitionProgress
                         showCondition: true
                         slideDirection: islandContainer.workspaceOriginSide
+                    }
+                }
+            }
+
+            Loader {
+                id: liveMediaLoader
+                anchors.fill: parent
+                active: islandContainer.liveMediaLayerVisible
+                asynchronous: false
+                visible: active
+
+                sourceComponent: Component {
+                    LiveMediaLayer {
+                        currentArtUrl: islandContainer.currentArtUrl
+                        currentTrack: islandContainer.currentTrack
+                        currentArtist: islandContainer.currentArtist
+                        playing: islandContainer.mediaPlaying
+                        textFontFamily: root.textFontFamily
+                        showCondition: islandContainer.liveMediaLayerVisible
+                    }
+                }
+            }
+
+            Loader {
+                id: liveTimerLoader
+                anchors.fill: parent
+                active: islandContainer.liveTimerLayerVisible
+                asynchronous: false
+                visible: active
+
+                sourceComponent: Component {
+                    LiveTimerLayer {
+                        progress: islandContainer.timerProgress
+                        remainingSeconds: islandContainer.timerRemainingSeconds
+                        running: islandContainer.timerRunning
+                        textFontFamily: root.textFontFamily
+                        showCondition: islandContainer.liveTimerLayerVisible
                     }
                 }
             }

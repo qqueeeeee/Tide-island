@@ -47,6 +47,19 @@ Item {
     property string timePlayed: "0:00"
     property string timeTotal: "0:00"
 
+    // --- Live-activity source of truth --------------------------------------
+    // Driven purely by the player's own MPRIS PlaybackStatus property (Quickshell
+    // emits a change signal for it), so the island never polls to learn whether
+    // music is still going.
+    readonly property int playbackState: activePlayer && activePlayer.playbackState !== undefined
+        ? activePlayer.playbackState
+        : MprisPlaybackState.Stopped
+    readonly property bool mediaPlaying: activePlayer !== null && playbackState === MprisPlaybackState.Playing
+    readonly property bool mediaPaused: activePlayer !== null && playbackState === MprisPlaybackState.Paused
+    // True while a real player holds a track and is playing or paused; goes
+    // false only when the player stops or leaves the bus.
+    readonly property bool mediaLive: (mediaPlaying || mediaPaused) && playerHasTrackInfo(activePlayer)
+
     onActivePlayerChanged: {
         syncLyricsBackend();
         Qt.callLater(function() {
