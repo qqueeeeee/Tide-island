@@ -274,7 +274,12 @@ PanelWindow {
         const action = Number(userConfig.hoverExpandAction);
         return isNaN(action) ? 0 : Math.max(0, Math.min(2, Math.round(action)));
     }
-    readonly property real baseExclusiveZone: userConfig.islandExclusiveZone
+    // In notch mode the reserved strip must end exactly at the bottom of the
+    // notch / bar content, otherwise a thin gap shows above tiled windows.
+    readonly property real baseExclusiveZone: root.macNotchStyle
+        ? Math.ceil(Math.max(root.islandTopOffset + root.islandRestingHeight,
+                             userConfig.statusBarEnabled ? statusBar.contentBottom : 0))
+        : userConfig.islandExclusiveZone
     readonly property bool hoverExpandEnabled: configuredHoverExpandAction > 0
     readonly property bool topGestureInputActive: !root.overviewVisible && islandContainer.canShowSideSwipe
     readonly property bool autoHideRuntimeEnabled: !shellRootController
@@ -1850,6 +1855,7 @@ PanelWindow {
             capsuleY: mainCapsule.y
             capsuleHeight: mainCapsule.height
             capsuleRestingWidth: root.root.islandRestingWidth
+            capsuleRestingHeight: root.root.islandRestingHeight
             revealProgress: root.autoHideProgress
             islandBusy: (islandContainer.islandState !== "normal"
                 && islandContainer.islandState !== "capture_recording") || root.overviewVisible

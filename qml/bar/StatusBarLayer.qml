@@ -19,6 +19,7 @@ Item {
     property real capsuleY: 0
     property real capsuleHeight: 0
     property real capsuleRestingWidth: 0
+    property real capsuleRestingHeight: 0
 
     // Island lifecycle signals.
     property real revealProgress: 1
@@ -63,7 +64,10 @@ Item {
     // Only when a side is physically squeezed shut do we retreat that cluster.
     readonly property real minimumClusterRoom: 36
 
-    readonly property real baselineY: capsuleY + capsuleHeight / 2
+    // Bar content is pinned to the island's *resting* baseline so it never rides
+    // down with the capsule when the island expands.
+    readonly property real restingHeight: capsuleRestingHeight > 0 ? capsuleRestingHeight : capsuleHeight
+    readonly property real baselineY: capsuleY + restingHeight / 2
     readonly property real slideDistance: 6
 
 
@@ -80,6 +84,7 @@ Item {
     readonly property real rightInputWidth: rightInputActive ? rightCluster.width : 0
     readonly property real rightInputHeight: rightInputActive ? Math.max(rightCluster.height, 18) : 0
 
+    readonly property real contentBottom: baselineY + Math.max(leftCluster.height, rightCluster.height) / 2
     readonly property real requiredWindowHeight: Math.ceil(baselineY + Math.max(leftCluster.height, rightCluster.height) / 2 + 8)
 
     anchors.fill: parent

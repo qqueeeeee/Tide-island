@@ -83,6 +83,20 @@ PagePanel {
                 "method": "toggleApplicationLauncher"
             },
             {
+                "action": "Screenshot (region)",
+                "mods": "SUPER SHIFT",
+                "key": "S",
+                "target": "capture",
+                "method": "screenshotArea"
+            },
+            {
+                "action": "Toggle screen recording",
+                "mods": "SUPER SHIFT",
+                "key": "R",
+                "target": "capture",
+                "method": "toggleRecording"
+            },
+            {
                 "action": "Toggle island",
                 "mods": "SUPER",
                 "key": "F",
