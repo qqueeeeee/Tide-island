@@ -17,6 +17,7 @@ Item {
 
     // --- Recording state ---
     property bool recording: false
+    property bool recordingPaused: false
     property int recordingSeconds: 0
     property string recordingPath: ""
     readonly property bool recordingRegion: pendingRegion
@@ -26,6 +27,8 @@ Item {
     // --- Screenshot state ---
     property string lastScreenshotPath: ""
     property bool screenshotPending: false
+
+    property string lastError: ""
 
     signal recordingStarted()
     signal recordingFinished(string path)
@@ -128,9 +131,19 @@ Item {
             : ["sh", "-c", prefix + recorder];
         recorderProcess.running = true;
         root.recording = true;
+        root.recordingPaused = false;
         root.recordingSeconds = 0;
         recordingTimer.restart();
         root.recordingStarted();
+    }
+
+    function togglePauseRecording() {
+        if (!root.recording)
+            return;
+
+        // wf-recorder toggles pause/resume on SIGUSR1.
+        recorderProcess.signal(10);
+        root.recordingPaused = !root.recordingPaused;
     }
 
     function stopRecording() {
@@ -146,7 +159,7 @@ Item {
 
         interval: 1000
         repeat: true
-        running: root.recording
+        running: root.recording && !root.recordingPaused
         onTriggered: root.recordingSeconds += 1
     }
 
@@ -156,6 +169,7 @@ Item {
         onExited: function(exitCode, exitStatus) {
             const path = root.recordingPath;
             root.recording = false;
+            root.recordingPaused = false;
             root.recordingPath = "";
             recordingTimer.stop();
 
@@ -194,17 +208,32 @@ Item {
             : "";
 
         let grab;
-        if (requested === "screen")
-            grab = "grim " + quoted;
-        else if (requested === "window")
-            grab = "g=$(slurp -r) || exit 1; grim -g \"$g\" " + quoted;
-        else
-            grab = "g=$(slurp) || exit 1; grim -g \"$g\" " + quoted;
+        // grimblast (hyprmoon's old keybinds used it) handles region selection and
+        // saving in one shot; grim + slurp is the fallback when it is absent.
+        if (requested === "screen") {
+            grab = "if command -v grimblast >/dev/null 2>&1; then grimblast save screen " + quoted
+                + "; else grim " + quoted + "; fi";
+        } else if (requested === "window") {
+            grab = "if command -v grimblast >/dev/null 2>&1; then grimblast save active " + quoted
+                + "; else g=$(slurp -r) || exit 1; grim -g \"$g\" " + quoted + "; fi";
+        } else {
+            grab = "if command -v grimblast >/dev/null 2>&1; then grimblast save area " + quoted
+                + "; else g=$(slurp) || exit 1; grim -g \"$g\" " + quoted + "; fi";
+        }
+
+        // Fail loudly: without this a missing grim/slurp/wl-clipboard binary looks
+        // like the shortcut silently doing nothing.
+        const requireTools = "for t in grim slurp; do "
+            + "command -v grimblast >/dev/null 2>&1 && break; "
+            + "command -v $t >/dev/null 2>&1 || { echo \"missing $t\" >&2; exit 1; }; done; ";
 
         screenshotProcess.pendingPath = path;
+        root.lastError = "";
         root.screenshotPending = true;
         screenshotProcess.command = ["sh", "-c",
-            prefix + grab + " || exit 1; " + copy + root.notifyCommand("Screenshot saved", path) + "exit 0"];
+            requireTools + prefix + grab
+            + " || exit 1; [ -s " + quoted + " ] || exit 1; "
+            + copy + root.notifyCommand("Screenshot saved", path) + "exit 0"];
         screenshotProcess.running = true;
     }
 
@@ -213,13 +242,31 @@ Item {
 
         property string pendingPath: ""
 
+        stderr: StdioCollector {
+            id: screenshotErrors
+
+            onStreamFinished: {
+                const message = String(screenshotErrors.text).trim();
+                if (message !== "")
+                    root.lastError = message;
+            }
+        }
+
         onExited: function(exitCode, exitStatus) {
             const path = screenshotProcess.pendingPath;
             screenshotProcess.pendingPath = "";
             root.screenshotPending = false;
 
-            if (exitCode !== 0 || path === "")
+            if (exitCode !== 0 || path === "") {
+                // Exit code 1 with no stderr is the normal "slurp cancelled" case.
+                if (root.lastError !== "") {
+                    errorProcess.command = ["sh", "-c",
+                        "notify-send 'Screenshot failed' " + root.shellQuote(root.lastError)];
+                    errorProcess.running = true;
+                    root.lastError = "";
+                }
                 return;
+            }
 
             root.lastScreenshotPath = path;
             root.screenshotCaptured(path);
@@ -281,4 +328,6 @@ Item {
     }
 
     Process { id: actionProcess }
+
+    Process { id: errorProcess }
 }

@@ -1852,7 +1852,10 @@ PanelWindow {
             z: 4
             capsuleX: mainCapsule.x
             capsuleWidth: mainCapsule.width
-            capsuleY: mainCapsule.y
+            // Pinned to the island's resting baseline: the bar must never ride
+            // down with the capsule when the island expands.
+            capsuleY: root.islandTopOffset
+                - (1 - root.autoHideProgress) * (root.islandRestingHeight + root.islandTopOffset + 8)
             capsuleHeight: mainCapsule.height
             capsuleRestingWidth: root.root.islandRestingWidth
             capsuleRestingHeight: root.root.islandRestingHeight
@@ -1988,7 +1991,9 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "capture_recording":
-                    return Math.max(root.islandRestingWidth, root.iosCompactWidth);
+                    // Wide enough for the elapsed timer on the left and the
+                    // pause/stop buttons on the right, like the iOS pill.
+                    return Math.max(root.islandRestingWidth, root.iosCompactWidth * 1.25);
                 case "capture_screenshot":
                     return root.iosExpandedWidth;
                 case "split":
@@ -2631,6 +2636,11 @@ PanelWindow {
                 sourceComponent: Component {
                     CaptureRecordingLayer {
                         elapsedText: root.captureElapsedText
+                        paused: root.captureController ? !!root.captureController.recordingPaused : false
+                        onPauseToggleRequested: {
+                            if (root.captureController)
+                                root.captureController.togglePauseRecording();
+                        }
                         textFontFamily: root.timeFontFamily
                         showCondition: islandContainer.captureRecordingLayerVisible
                         onStopRequested: {

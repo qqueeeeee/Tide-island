@@ -177,14 +177,6 @@ PagePanel {
                         onToggledValue: function(value) { root.setBoolValue("captureShowScreenshotPreview", value) }
                     }
 
-                    ToggleRow {
-                        width: parent.width
-                        title: "Status Bar Recording Pill"
-                        subtitle: "Keep a red timer in the bar while recording"
-                        checked: root.boolValue("statusBarShowRecordingPill", true)
-                        onToggledValue: function(value) { root.setBoolValue("statusBarShowRecordingPill", value) }
-                    }
-
                     ValueRow {
                         width: parent.width
                         title: "Preview Duration"
