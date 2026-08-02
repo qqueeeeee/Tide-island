@@ -130,6 +130,18 @@ Scope {
         SystemServices.requestVolume();
     }
 
+    Nucleus.HudSource {
+        id: hudSource
+
+        onVolumeChanged: (value, muted) => {
+            shellRoot.forEachIsland((island) => island.showVolume(value, muted));
+        }
+
+        onBrightnessChanged: (value) => {
+            shellRoot.forEachIsland((island) => island.showBrightness(value));
+        }
+    }
+
     Nucleus.ClipboardSource { id: clipboardSource }
     Nucleus.WorkspaceSource { id: workspaceSource }
     Nucleus.NotifySource { id: notifySource }
