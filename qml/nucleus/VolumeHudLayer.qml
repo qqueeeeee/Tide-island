@@ -8,6 +8,8 @@ Item {
 
     property real value: 0
     property bool muted: false
+    // "volume" | "brightness"
+    property string kind: "volume"
     property string textFontFamily: ""
     property string iconFontFamily: ""
     property bool showCondition: true
@@ -34,9 +36,11 @@ Item {
 
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            text: root.muted || root.value <= 0.001
-                ? "\uf026"
-                : (root.value > 0.5 ? tokens.glyphVolume : tokens.glyphVolumeLow)
+            text: root.kind === "brightness"
+                ? tokens.glyphSun
+                : (root.muted || root.value <= 0.001
+                    ? "\uf026"
+                    : (root.value > 0.5 ? tokens.glyphVolume : tokens.glyphVolumeLow))
             color: tokens.fg
             font.family: root.iconFontFamily
             font.pixelSize: 15
