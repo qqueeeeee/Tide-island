@@ -1017,6 +1017,23 @@ PanelWindow {
         }
         readonly property bool liveMediaLayerVisible: !root.overviewVisible && islandState === "live_media"
         readonly property bool liveTimerLayerVisible: !root.overviewVisible && islandState === "live_timer"
+        readonly property bool liveDualLayerVisible: !root.overviewVisible && islandState === "live_dual"
+        readonly property bool timerExpandedLayerVisible: !root.overviewVisible && islandState === "timer_expanded"
+
+        // Every live activity, most recently started first. Used by the dual
+        // (split) compact layout and by the minimal dot's cycling behaviour.
+        readonly property var activeLiveActivities: {
+            const entries = [];
+            if (recordingLive) entries.push({ kind: "recording", order: recordingLiveOrder });
+            if (timerLive) entries.push({ kind: "timer", order: timerLiveOrder });
+            if (mediaLive) entries.push({ kind: "media", order: mediaLiveOrder });
+            entries.sort(function(a, b) { return b.order - a.order; });
+            const kinds = [];
+            for (let i = 0; i < entries.length; i++)
+                kinds.push(entries[i].kind);
+            return kinds;
+        }
+        readonly property int liveActivityCount: activeLiveActivities.length
 
         // --- Idle (nothing live) ------------------------------------------
         // Idle content is a config value, not a layout decision. Default is the
@@ -1051,6 +1068,7 @@ PanelWindow {
         readonly property bool blocksTransientSplit: islandState === "capture_recording"
             || islandState === "capture_screenshot"
             || islandState === "expanded"
+            || islandState === "timer_expanded"
             || islandState === "bluetooth_expanded"
             || islandState === "control_center"
             || islandState === "notification"
@@ -1344,6 +1362,10 @@ PanelWindow {
         // The single source of truth for "what does the island go back to?".
         // Everything transient collapses to this, never to a hardcoded idle.
         function effectiveRestingState() {
+            // Two or more things live at once: the pill carries both as
+            // independent compact bubbles instead of hiding one of them.
+            if (liveActivityCount > 1)
+                return "live_dual";
             const liveState = liveActivityState();
             if (liveState !== "")
                 return liveState;
@@ -1356,6 +1378,7 @@ PanelWindow {
                 || state === "lyrics"
                 || state === "live_media"
                 || state === "live_timer"
+                || state === "live_dual"
                 || state === "capture_recording";
         }
 
@@ -1887,12 +1910,73 @@ PanelWindow {
         // Only compact live activities have a bigger card worth opening; this
         // is what a deliberate long press (or tap toggle) resolves to.
         readonly property bool canExpandRestingActivity: !root.overviewVisible
-            && (islandState === "live_media" || islandState === "live_timer")
+            && (islandState === "live_media"
+                || islandState === "live_timer"
+                || islandState === "live_dual")
+
+        // Each activity type has its own expanded layout; nothing shares a
+        // generic card.
+        function expandActivity(kind) {
+            if (root.overviewVisible) return;
+            switch (kind) {
+            case "timer":
+                showTimerExpanded();
+                break;
+            case "media":
+                showExpandedPlayer(false);
+                break;
+            case "recording":
+                // The recording compact state already carries its own controls.
+                break;
+            default:
+                break;
+            }
+        }
 
         function expandRestingActivity() {
             if (!canExpandRestingActivity) return;
+            if (islandState === "live_timer") {
+                showTimerExpanded();
+                return;
+            }
+            if (islandState === "live_dual") {
+                // Long-pressing the whole pill expands the primary activity.
+                expandActivity(activeLiveActivities.length > 0 ? activeLiveActivities[0] : "");
+                return;
+            }
             // User-initiated, so never auto-collapse on a timeout.
             showExpandedPlayer(false);
+        }
+
+        function showTimerExpanded() {
+            cancelSideSwipeSettle();
+            abortSideTransientMode();
+            clearTransientCapsule();
+            islandState = "timer_expanded";
+            mainCapsule.displayedWidth = mainCapsule.baseTargetWidth;
+            expandedByPlayerAutoOpen = false;
+            stopAutoHideTimer();
+        }
+
+        // Tapping the minimal dot rotates which live activities occupy the two
+        // compact bubbles: the oldest activity becomes the newest.
+        function cycleLiveActivity() {
+            if (liveActivityCount < 2) return;
+            const last = activeLiveActivities[liveActivityCount - 1];
+            liveActivityOrderCounter += 1;
+            switch (last) {
+            case "media":
+                mediaLiveOrder = liveActivityOrderCounter;
+                break;
+            case "timer":
+                timerLiveOrder = liveActivityOrderCounter;
+                break;
+            case "recording":
+                recordingLiveOrder = liveActivityOrderCounter;
+                break;
+            default:
+                break;
+            }
         }
 
 
@@ -2296,6 +2380,11 @@ PanelWindow {
                     return root.iosCompactWidth;
                 case "live_media":
                     return Math.max(root.islandRestingWidth, root.iosCompactWidth * 1.1);
+                case "live_dual":
+                    // Room for two bubbles plus the middle gap.
+                    return Math.max(root.islandRestingWidth, root.iosCompactWidth * 1.5);
+                case "timer_expanded":
+                    return root.iosExpandedWidth;
                 case "live_timer":
                     return Math.max(root.islandRestingWidth, root.iosCompactWidth * 0.78);
                 case "custom":
@@ -2338,6 +2427,10 @@ PanelWindow {
                 case "expanded":
                 case "bluetooth_expanded":
                     return root.iosExpandedHeight;
+                case "timer_expanded":
+                    // Shorter than the media card: one hero countdown and two
+                    // small controls, no scrubber or transport row.
+                    return Math.max(104, root.iosExpandedHeight * 0.76);
                 case "notification":
                     return notificationLoader.item
                         ? Math.max(root.iosNotificationHeight, notificationLoader.item.preferredHeight)
@@ -3047,6 +3140,66 @@ PanelWindow {
                         running: islandContainer.timerRunning
                         textFontFamily: root.textFontFamily
                         showCondition: islandContainer.liveTimerLayerVisible
+                    }
+                }
+            }
+
+            Loader {
+                id: liveDualLoader
+                anchors.fill: parent
+                active: islandContainer.liveDualLayerVisible
+                asynchronous: false
+                visible: active
+
+                sourceComponent: Component {
+                    LiveDualLayer {
+                        activities: islandContainer.activeLiveActivities
+                        currentArtUrl: islandContainer.currentArtUrl
+                        mediaPlaying: islandContainer.mediaPlaying
+                        timerProgress: islandContainer.timerProgress
+                        timerRemainingSeconds: islandContainer.timerRemainingSeconds
+                        timerRunning: islandContainer.timerRunning
+                        recordingElapsedText: root.captureElapsedText
+                        recordingPaused: root.captureController ? !!root.captureController.recordingPaused : false
+                        textFontFamily: root.textFontFamily
+                        showCondition: islandContainer.liveDualLayerVisible
+                        onActivityActivated: function(kind) {
+                            islandContainer.suppressCapsuleClick(true);
+                            islandContainer.expandActivity(kind);
+                        }
+                        onCycleRequested: {
+                            islandContainer.suppressCapsuleClick(true);
+                            islandContainer.cycleLiveActivity();
+                        }
+                    }
+                }
+            }
+
+            Loader {
+                id: timerExpandedLoader
+                anchors.fill: parent
+                active: islandContainer.timerExpandedLayerVisible
+                asynchronous: false
+                visible: active
+
+                sourceComponent: Component {
+                    TimerExpandedLayer {
+                        progress: islandContainer.timerProgress
+                        remainingSeconds: islandContainer.timerRemainingSeconds
+                        totalSeconds: islandContainer.timerTotalSeconds
+                        running: islandContainer.timerRunning
+                        textFontFamily: root.textFontFamily
+                        iconFontFamily: root.iconFontFamily
+                        showCondition: islandContainer.timerExpandedLayerVisible
+                        onControlPressed: islandContainer.suppressCapsuleClick(true)
+                        onToggleRequested: islandContainer.toggleTimer(
+                            islandContainer.timerSelectedHours,
+                            islandContainer.timerSelectedMinutes
+                        )
+                        onCancelRequested: {
+                            islandContainer.resetTimer();
+                            islandContainer.smartRestoreState();
+                        }
                     }
                 }
             }

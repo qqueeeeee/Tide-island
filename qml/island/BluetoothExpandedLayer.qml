@@ -1,6 +1,14 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import IslandBackend
 
+// Device connection ("AirPods connected") expanded layout.
+//
+// Read-only by design: this is a transient acknowledgement, not a control card,
+// so it has no buttons and no volume slider. Layout mirrors iOS: device glyph on
+// the left, device name plus connection state on the right, battery percentage
+// with a small battery pill on the trailing edge.
 Item {
     id: root
 
@@ -8,6 +16,8 @@ Item {
 
     property bool showCondition: false
     property var device: null
+    // Kept for source compatibility with existing call sites; unused, because
+    // this layout intentionally exposes no controls.
     property real volumeLevel: -1
     property string iconText: ""
     property string iconFontFamily: ""
@@ -30,10 +40,6 @@ Item {
     readonly property int batteryPercent: batteryAvailable
         ? Math.max(0, Math.min(100, Math.round(batteryRawValue <= 1 ? batteryRawValue * 100 : batteryRawValue)))
         : -1
-    readonly property bool volumeAvailable: volumeLevel >= 0
-    readonly property int volumePercent: volumeAvailable
-        ? Math.max(0, Math.min(100, Math.round(volumeLevel * 100)))
-        : -1
     readonly property color batteryColor: {
         if (!batteryAvailable) return "#5d6068";
         if (batteryPercent <= 10) return "#ff3b30";
@@ -45,7 +51,10 @@ Item {
     property real revealOffset: 0
 
     anchors.fill: parent
-    anchors.margins: 20
+    anchors.leftMargin: 30
+    anchors.rightMargin: 30
+    anchors.topMargin: 16
+    anchors.bottomMargin: 16
     opacity: 0
     transform: Translate { y: root.revealOffset }
 
@@ -54,40 +63,94 @@ Item {
         active: root.showCondition
     }
 
-    Column {
-        anchors.fill: parent
-        spacing: 16
+    // --- Left: device glyph (earbuds drawn from primitives, so the layout does
+    // not depend on an icon font shipping a headphone glyph) ----------------
+    Item {
+        id: deviceGlyph
+
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        width: 52
+        height: 52
+
+        Text {
+            anchors.centerIn: parent
+            visible: root.iconText !== ""
+            text: root.iconText
+            color: "#0a84ff"
+            font.pixelSize: root.userConfig.iconFontSize + 14
+            font.family: root.iconFontFamily
+        }
 
         Item {
-            width: parent.width
-            height: 66
+            anchors.centerIn: parent
+            visible: root.iconText === ""
+            width: 34
+            height: 34
 
-            Item {
-                id: bluetoothIcon
-                anchors.left: parent.left
-                anchors.verticalCenter: parent.verticalCenter
-                width: 44
-                height: 58
+            Repeater {
+                model: 2
 
-                Text {
-                    anchors.centerIn: parent
-                    text: root.iconText
-                    color: "#0a84ff"
-                    font.pixelSize: userConfig.iconFontSize + 16
-                    font.family: root.iconFontFamily
+                Item {
+                    required property int index
+
+                    x: index === 0 ? 2 : 20
+                    y: 4
+                    width: 12
+                    height: 26
+
+                    Rectangle {
+                        width: 12
+                        height: 12
+                        radius: 6
+                        color: "#f5f5f7"
+                    }
+
+                    Rectangle {
+                        x: 4.5
+                        y: 10
+                        width: 3
+                        height: 16
+                        radius: 1.5
+                        color: "#f5f5f7"
+                    }
                 }
+            }
+        }
+    }
+
+    // --- Right: name, connected state, battery -----------------------------
+    Item {
+        anchors.left: deviceGlyph.right
+        anchors.leftMargin: 16
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        height: nameText.height + stateText.height + 4
+
+        Row {
+            id: batteryPill
+
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 8
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: root.batteryAvailable ? root.batteryPercent + "%" : "--"
+                color: root.batteryAvailable ? "#ffffff" : "#8e8e93"
+                font.family: root.textFontFamily
+                font.pixelSize: root.userConfig.bodyFontSize
+                font.weight: Font.DemiBold
             }
 
             Item {
-                id: batteryIcon
-                anchors.right: parent.right
-                y: infoBlock.y + Math.round((nameLine.height - height) / 2)
+                anchors.verticalCenter: parent.verticalCenter
                 width: 28
                 height: 14
 
                 Rectangle {
                     anchors.fill: parent
-                    anchors.rightMargin: 2
+                    anchors.rightMargin: 3
                     radius: 4
                     color: "transparent"
                     border.color: "#8e8e93"
@@ -103,10 +166,7 @@ Item {
                         color: root.batteryColor
 
                         Behavior on width {
-                            NumberAnimation {
-                                duration: 300
-                                easing.type: Easing.OutCubic
-                            }
+                            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
                         }
 
                         Behavior on color {
@@ -124,114 +184,37 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
-
-            Item {
-                id: infoBlock
-                anchors.left: bluetoothIcon.right
-                anchors.leftMargin: 12
-                anchors.right: batteryIcon.left
-                anchors.rightMargin: 4
-                anchors.verticalCenter: parent.verticalCenter
-                height: 44
-
-                Row {
-                    id: nameLine
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    height: 22
-                    spacing: 8
-
-                    Text {
-                        width: Math.max(0, parent.width - batteryText.implicitWidth - parent.spacing)
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.deviceName
-                        color: "#ffffff"
-                        font.pixelSize: userConfig.bodyFontSize - 1
-                        font.family: root.textFontFamily
-                        font.weight: Font.DemiBold
-                        elide: Text.ElideRight
-                    }
-
-                    Text {
-                        id: batteryText
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: root.batteryAvailable ? root.batteryPercent + "%" : "--"
-                        color: root.batteryAvailable ? "#cfd2d8" : "#8e8e93"
-                        font.pixelSize: userConfig.bodyFontSize - 3
-                        font.family: root.textFontFamily
-                        font.weight: Font.DemiBold
-                    }
-                }
-
-                Text {
-                    anchors.left: parent.left
-                    anchors.right: parent.right
-                    anchors.bottom: parent.bottom
-                    text: "Connected"
-                    color: "#34c759"
-                    font.pixelSize: userConfig.bodyFontSize - 4
-                    font.family: root.textFontFamily
-                    font.weight: Font.Medium
-                    elide: Text.ElideRight
-                }
-            }
         }
 
-        Item {
-            width: parent.width
-            height: 43
+        Text {
+            id: nameText
 
-            Text {
-                id: volumeLabel
-                anchors.left: parent.left
-                anchors.leftMargin: 12
-                anchors.baseline: volumeValue.baseline
-                text: "vol"
-                color: "#f5f5f7"
-                font.pixelSize: 12
-                font.family: root.textFontFamily
-                font.weight: Font.Medium
-            }
+            anchors.left: parent.left
+            anchors.right: batteryPill.left
+            anchors.rightMargin: 12
+            anchors.top: parent.top
+            text: root.deviceName
+            color: "#ffffff"
+            font.family: root.textFontFamily
+            font.pixelSize: root.userConfig.bodyFontSize + 1
+            font.weight: Font.DemiBold
+            elide: Text.ElideRight
+        }
 
-            Text {
-                id: volumeValue
-                anchors.right: parent.right
-                anchors.rightMargin: 12
-                anchors.verticalCenter: volumeTrack.verticalCenter
-                text: root.volumeAvailable ? root.volumePercent : "--"
-                color: "#8e8e93"
-                font.pixelSize: 12
-                font.family: root.textFontFamily
-                font.weight: Font.Medium
-            }
+        Text {
+            id: stateText
 
-            Rectangle {
-                id: volumeTrack
-                anchors.left: volumeLabel.right
-                anchors.leftMargin: 14
-                anchors.right: volumeValue.left
-                anchors.rightMargin: 14
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: 15
-                height: 8
-                radius: 4
-                color: "#2c2c2e"
-
-                Rectangle {
-                    width: root.volumeAvailable ? parent.width * (root.volumePercent / 100.0) : 0
-                    height: parent.height
-                    radius: parent.radius
-                    color: "#ffffff"
-
-                    Behavior on width {
-                        NumberAnimation {
-                            duration: 260
-                            easing.type: Easing.OutCubic
-                        }
-                    }
-                }
-            }
+            anchors.left: parent.left
+            anchors.right: batteryPill.left
+            anchors.rightMargin: 12
+            anchors.top: nameText.bottom
+            anchors.topMargin: 3
+            text: "Connected"
+            color: "#34c759"
+            font.family: root.textFontFamily
+            font.pixelSize: Math.max(10, root.userConfig.bodyFontSize - 3)
+            font.weight: Font.Medium
+            elide: Text.ElideRight
         }
     }
 }
