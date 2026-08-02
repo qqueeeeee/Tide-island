@@ -59,7 +59,7 @@ Item {
             text: root.elapsedText
             color: tokens.fg
             font.family: root.heroFontFamily !== "" ? root.heroFontFamily : root.textFontFamily
-            font.pixelSize: 12.5
+            font.pixelSize: 13
             font.weight: Font.DemiBold
         }
 
@@ -73,7 +73,7 @@ Item {
             color: tokens.fg55
             elide: Text.ElideRight
             font.family: root.textFontFamily
-            font.pixelSize: 11.5
+            font.pixelSize: 12
         }
     }
 }

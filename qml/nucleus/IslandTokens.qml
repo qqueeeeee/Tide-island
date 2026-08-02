@@ -22,7 +22,13 @@ Item {
     readonly property color fg55: "#8cffffff"
     readonly property color fg50: "#80ffffff"
     readonly property color fg35: "#59ffffff"
+    readonly property color fg45: "#73ffffff"
+    readonly property color fg40: "#66ffffff"
+    readonly property color fg25: "#40ffffff"
     readonly property color fg18: "#2effffff"
+    readonly property color fg14: "#24ffffff"
+    readonly property color fg09: "#17ffffff"
+    readonly property color fg06: "#0fffffff"
     readonly property color chip: "#1fffffff"          // white / 12%
     readonly property color chipHover: "#2effffff"
     readonly property color chipPressed: "#3dffffff"
@@ -51,6 +57,15 @@ Item {
     readonly property size deviceExpanded: Qt.size(318, 86)
     readonly property size mediaExpanded: Qt.size(372, 196)
     readonly property size timerExpanded: Qt.size(340, 132)
+    readonly property size launcherCompact: Qt.size(260, 38)
+    readonly property size launcherExpanded: Qt.size(460, 246)
+    readonly property size clipboardCompact: Qt.size(252, 38)
+    readonly property size clipboardExpanded: Qt.size(460, 268)
+    readonly property size notifyCompact: Qt.size(246, 38)
+    readonly property size notifyExpanded: Qt.size(420, 296)
+    readonly property size notifyBanner: Qt.size(372, 58)
+    readonly property size workspacesCompact: Qt.size(258, 38)
+    readonly property size workspacesExpanded: Qt.size(452, 336)
 
     // --- Nerd Font glyphs used by the ported layouts ----------------------
     readonly property string glyphWifi: "\uf1eb"
@@ -74,4 +89,19 @@ Item {
     readonly property string glyphWave: "\uf001"
     readonly property string glyphBell: "\uf0f3"
     readonly property string glyphTimer: "\uf252"
+    readonly property string glyphSearch: "\uf002"
+    readonly property string glyphRocket: "\uf135"
+    readonly property string glyphClipboard: "\uf0ea"
+    readonly property string glyphImage: "\uf03e"
+    readonly property string glyphLink: "\uf0c1"
+    readonly property string glyphText: "\uf031"
+    readonly property string glyphGrid: "\uf00a"
+    readonly property string glyphBellOff: "\uf1f6"
+    readonly property string glyphCheck: "\uf00c"
+    readonly property string glyphClose: "\uf00d"
+    readonly property string glyphTerminal: "\uf120"
+    readonly property string glyphMail: "\uf0e0"
+    readonly property string glyphPackage: "\uf187"
+    readonly property string glyphMessage: "\uf075"
+    readonly property string glyphMusic: "\uf001"
 }

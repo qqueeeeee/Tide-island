@@ -76,7 +76,7 @@ Item {
                 color: tokens.fg55
                 elide: Text.ElideRight
                 font.family: root.textFontFamily
-                font.pixelSize: 10.5
+                font.pixelSize: 11
             }
         }
 
@@ -90,7 +90,7 @@ Item {
             wrapMode: Text.WordWrap
             elide: Text.ElideRight
             font.family: root.textFontFamily
-            font.pixelSize: 11.5
+            font.pixelSize: 12
         }
     }
 

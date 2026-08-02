@@ -100,7 +100,7 @@ Item {
                     color: tokens.fg60
                     elide: Text.ElideRight
                     font.family: root.textFontFamily
-                    font.pixelSize: 11.5
+                    font.pixelSize: 12
                 }
             }
         }

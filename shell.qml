@@ -57,7 +57,28 @@ Scope {
             const parsed = Number(value);
             shellRoot.forEachIsland((island) => island.showVolume(isNaN(parsed) ? 0 : parsed, false));
         }
+
+        function launcher() {
+            shellRoot.forEachIsland((island) => island.toggleLauncher());
+        }
+
+        function clipboard() {
+            shellRoot.forEachIsland((island) => island.toggleClipboard());
+        }
+
+        function notifications() {
+            shellRoot.forEachIsland((island) => island.toggleNotifications());
+        }
+
+        function workspaces() {
+            shellRoot.forEachIsland((island) => island.toggleWorkspaces());
+        }
+
+        function close() {
+            shellRoot.forEachIsland((island) => island.closePanel());
+        }
     }
+
 
     IpcHandler {
         target: "tide"
@@ -109,6 +130,10 @@ Scope {
         SystemServices.requestVolume();
     }
 
+    Nucleus.ClipboardSource { id: clipboardSource }
+    Nucleus.WorkspaceSource { id: workspaceSource }
+    Nucleus.NotifySource { id: notifySource }
+
     Variants {
         id: islandVariants
 
@@ -120,6 +145,9 @@ Scope {
             screenObject: modelData
             shellRootController: shellRoot
             captureController: captureBackend
+            clipboard: clipboardSource
+            notifications: notifySource
+            workspaces: workspaceSource
         }
     }
 

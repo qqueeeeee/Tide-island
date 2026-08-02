@@ -24,6 +24,9 @@ PanelWindow {
     required property var screenObject
     property var shellRootController: null
     property var captureController: null
+    property var clipboard: null
+    property var notifications: null
+    property var workspaces: null
 
     readonly property var userConfig: UserConfig
 
@@ -46,6 +49,9 @@ PanelWindow {
     // --- Transient state ----------------------------------------------------
     // "" | "notification" | "shot" | "volume"
     property string transientActivity: ""
+    // "" | "launcher" | "clipboard" | "notify" | "workspaces" — keyboard-driven
+    // panels; only one can be open and they always open expanded.
+    property string panelActivity: ""
     property bool controlCentreOpen: false
     property real life: 1
 
@@ -53,11 +59,14 @@ PanelWindow {
     property string notificationSummary: ""
     property string notificationBody: ""
     property string screenshotPath: ""
+    property var bannerItem: null
     property real volumeValue: 0
     property bool volumeMuted: false
 
     // --- Resolved activity --------------------------------------------------
     readonly property string activity: {
+        if (root.panelActivity !== "")
+            return root.panelActivity;
         if (root.transientActivity !== "")
             return root.transientActivity;
         if (root.controlCentreOpen)
@@ -69,7 +78,13 @@ PanelWindow {
         return "idle";
     }
 
-    readonly property bool hasExpanded: root.activity === "media"
+    readonly property bool keyboardPanel: root.panelActivity !== ""
+
+    readonly property bool hasExpanded: root.activity === "launcher"
+        || root.activity === "clipboard"
+        || root.activity === "notify"
+        || root.activity === "workspaces"
+        || root.activity === "media"
         || root.activity === "recording"
         || root.activity === "control"
         || root.activity === "shot"
@@ -89,6 +104,16 @@ PanelWindow {
             return root.expanded ? tokens.shotExpanded : tokens.shotCompact;
         case "notification":
             return root.expanded ? tokens.notificationExpanded : tokens.notificationCompact;
+        case "launcher":
+            return root.expanded ? tokens.launcherExpanded : tokens.launcherCompact;
+        case "clipboard":
+            return root.expanded ? tokens.clipboardExpanded : tokens.clipboardCompact;
+        case "notify":
+            return root.expanded ? tokens.notifyExpanded : tokens.notifyCompact;
+        case "workspaces":
+            return root.expanded ? tokens.workspacesExpanded : tokens.workspacesCompact;
+        case "banner":
+            return tokens.notifyBanner;
         case "volume":
             return tokens.volumeCompact;
         default:
@@ -103,6 +128,8 @@ PanelWindow {
             return 6000;
         case "shot":
             return 6000;
+        case "banner":
+            return 5000;
         case "volume":
             return 2200;
         default:
@@ -117,6 +144,11 @@ PanelWindow {
     implicitHeight: Math.ceil(root.topMargin + tokens.mediaExpanded.height + 28)
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "tide-island-nucleus"
+    // Search fields and grid navigation need real key events; everything else
+    // stays click-through and focus-free.
+    WlrLayershell.keyboardFocus: root.keyboardPanel
+        ? WlrKeyboardFocus.Exclusive
+        : WlrKeyboardFocus.None
 
     // Only the capsule takes input; the rest of the strip stays click-through.
     mask: Region {
@@ -131,13 +163,27 @@ PanelWindow {
 
     MediaSource { id: media }
 
+    // Shared, single-instance sources owned by shell.qml (one notification
+    // server / cliphist reader per shell, not per monitor).
+    Connections {
+        target: root.notifications
+
+        function onReceived(item) {
+            if (root.panelActivity !== "")
+                return;
+            root.bannerItem = item;
+            root.showTransient("banner");
+        }
+    }
+
     // ----------------------------------------------------------------- logic
     onActivityChanged: {
         // Transients open expanded (they carry content and actions); live
         // activities stay compact until touched, exactly like iOS.
         root.expanded = root.activity === "shot"
             || root.activity === "notification"
-            || root.activity === "control";
+            || root.activity === "control"
+            || root.keyboardPanel;
         pressTimer.stop();
     }
 
@@ -177,6 +223,22 @@ PanelWindow {
         root.volumeMuted = !!muted;
         root.showTransient("volume");
     }
+
+    // --- Keyboard panels ---------------------------------------------------
+    function openPanel(kind) {
+        root.clearTransient();
+        root.controlCentreOpen = false;
+        root.panelActivity = root.panelActivity === kind ? "" : kind;
+    }
+
+    function closePanel() {
+        root.panelActivity = "";
+    }
+
+    function toggleLauncher() { root.openPanel("launcher"); }
+    function toggleClipboard() { root.openPanel("clipboard"); }
+    function toggleNotifications() { root.openPanel("notify"); }
+    function toggleWorkspaces() { root.openPanel("workspaces"); }
 
     function toggleControlCentre() {
         root.clearTransient();
@@ -459,6 +521,99 @@ PanelWindow {
 
             Loader {
                 anchors.fill: parent
+                active: root.activity === "launcher" && !root.expanded
+                sourceComponent: LauncherCompactLayer {
+                    textFontFamily: root.textFontFamily
+                    iconFontFamily: root.iconFontFamily
+                }
+            }
+
+            Loader {
+                anchors.fill: parent
+                active: root.activity === "launcher" && root.expanded
+                sourceComponent: LauncherExpandedLayer {
+                    textFontFamily: root.textFontFamily
+                    iconFontFamily: root.iconFontFamily
+                    onCloseRequested: root.closePanel()
+                }
+            }
+
+            Loader {
+                anchors.fill: parent
+                active: root.activity === "clipboard" && !root.expanded
+                sourceComponent: ClipboardCompactLayer {
+                    count: root.clipboard ? root.clipboard.count : 0
+                    textFontFamily: root.textFontFamily
+                    iconFontFamily: root.iconFontFamily
+                }
+            }
+
+            Loader {
+                anchors.fill: parent
+                active: root.activity === "clipboard" && root.expanded
+                sourceComponent: ClipboardExpandedLayer {
+                    source: root.clipboard
+                    textFontFamily: root.textFontFamily
+                    iconFontFamily: root.iconFontFamily
+                    onCloseRequested: root.closePanel()
+                }
+            }
+
+            Loader {
+                anchors.fill: parent
+                active: root.activity === "notify" && !root.expanded
+                sourceComponent: NotifyCompactLayer {
+                    count: root.notifications ? root.notifications.count : 0
+                    dnd: root.notifications ? root.notifications.dnd : false
+                    textFontFamily: root.textFontFamily
+                    iconFontFamily: root.iconFontFamily
+                }
+            }
+
+            Loader {
+                anchors.fill: parent
+                active: root.activity === "notify" && root.expanded
+                sourceComponent: NotifyExpandedLayer {
+                    source: root.notifications
+                    textFontFamily: root.textFontFamily
+                    iconFontFamily: root.iconFontFamily
+                    onCloseRequested: root.closePanel()
+                }
+            }
+
+            Loader {
+                anchors.fill: parent
+                active: root.activity === "workspaces" && !root.expanded
+                sourceComponent: WorkspacesCompactLayer {
+                    source: root.workspaces
+                    textFontFamily: root.textFontFamily
+                    iconFontFamily: root.iconFontFamily
+                }
+            }
+
+            Loader {
+                anchors.fill: parent
+                active: root.activity === "workspaces" && root.expanded
+                sourceComponent: WorkspacesExpandedLayer {
+                    source: root.workspaces
+                    textFontFamily: root.textFontFamily
+                    iconFontFamily: root.iconFontFamily
+                    onCloseRequested: root.closePanel()
+                }
+            }
+
+            Loader {
+                anchors.fill: parent
+                active: root.activity === "banner"
+                sourceComponent: NotifyBannerLayer {
+                    item: root.bannerItem
+                    textFontFamily: root.textFontFamily
+                    iconFontFamily: root.iconFontFamily
+                }
+            }
+
+            Loader {
+                anchors.fill: parent
                 active: root.activity === "volume"
                 sourceComponent: VolumeHudLayer {
                     value: root.volumeValue
@@ -488,10 +643,17 @@ PanelWindow {
 
             onClicked: (mouse) => {
                 if (mouse.button === Qt.RightButton) {
-                    if (root.transientActivity !== "")
+                    if (root.panelActivity !== "")
+                        root.closePanel();
+                    else if (root.transientActivity !== "")
                         root.clearTransient();
                     else
                         root.closeControlCentre();
+                    return;
+                }
+                if (root.activity === "banner") {
+                    root.clearTransient();
+                    root.openPanel("notify");
                     return;
                 }
                 if (root.hasExpanded)

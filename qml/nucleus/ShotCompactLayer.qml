@@ -46,7 +46,7 @@ Item {
             color: tokens.fg
             elide: Text.ElideRight
             font.family: root.textFontFamily
-            font.pixelSize: 12.5
+            font.pixelSize: 13
             font.weight: Font.Medium
         }
     }
