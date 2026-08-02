@@ -52,7 +52,16 @@ QtObject {
         "captureCopyToClipboard": true,
         "captureNotify": true,
         "captureShowScreenshotPreview": true,
-        "captureScreenshotPreviewSeconds": 6
+        "captureScreenshotPreviewSeconds": 6,
+        // Wallpaper
+        "wallpaperPath": "",
+        "wallpaperLibraryPath": "",
+        "wallpaperPywalEnabled": false,
+        "wallpaperTransitionType": "center",
+        "wallpaperTransitionDuration": 3,
+        "wallpaperTransitionFps": 60,
+        "wallpaperCustomCommandEnabled": false,
+        "wallpaperCustomCommand": ""
     })
 
     property Timer writeTimer: Timer {

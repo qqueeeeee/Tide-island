@@ -78,6 +78,7 @@ qt_add_qml_module(tide-island-config-app
         PageStatusBar.qml
         PageAppearance.qml
         PageCapture.qml
+        PageWallpaper.qml
         PageShortcuts.qml
         PageAbout.qml
 )

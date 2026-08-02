@@ -23,6 +23,7 @@ ApplicationWindow {
         { title: "Status bar", subtitle: "Spacing and modules", glyph: "▤", source: "PageStatusBar.qml" },
         { title: "Appearance", subtitle: "Fonts and sizes", glyph: "✿", source: "PageAppearance.qml" },
         { title: "Capture", subtitle: "Screenshots and recording", glyph: "◉", source: "PageCapture.qml" },
+        { title: "Wallpaper", subtitle: "Picker, pywal, transitions", glyph: "▣", source: "PageWallpaper.qml" },
         { title: "Shortcuts", subtitle: "Keybinds and IPC", glyph: "⌘", source: "PageShortcuts.qml" },
         { title: "About", subtitle: "Config file and resets", glyph: "ⓘ", source: "PageAbout.qml" }
     ]

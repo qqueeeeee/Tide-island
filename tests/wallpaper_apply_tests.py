@@ -12,7 +12,7 @@ import unittest
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 PICKER_QML = REPOSITORY_ROOT / "qml/island/WallpaperPickerLayer.qml"
-SETTINGS_QML = REPOSITORY_ROOT / "Tide-island-app/Wallpaper.qml"
+SETTINGS_QML = REPOSITORY_ROOT / "Tide-island-app/PageWallpaper.qml"
 
 
 def extract_apply_script():
