@@ -3,8 +3,10 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import IslandBackend
 
-// Expanded island layer shown right after a screenshot lands: thumbnail on the
-// left, quick actions on the right (copy, markup, open, delete).
+// Screenshot card, ported pixel-for-pixel from the React reference
+// (`NotificationExpanded`): 348 x 106, 16px side padding, a 36px rounded chip
+// with the camera glyph, title + filename, then four equal-width action pills
+// and the draining life bar along the bottom.
 Item {
     id: root
 
@@ -13,8 +15,11 @@ Item {
     property string filePath: ""
     property string textFontFamily: ""
     property string heroFontFamily: ""
+    property string iconFontFamily: userConfig.iconFontFamily
     property bool showCondition: true
-    // Driven by IslandContentReveal (see below) — do not bind.
+    // 1 -> 0 while the card is on screen; drives the bottom life bar.
+    property real lifeProgress: 1
+    // Driven by IslandContentReveal — do not bind.
     property real revealOffset: 0
 
     readonly property string displayName: {
@@ -33,6 +38,8 @@ Item {
     opacity: 0
     transform: Translate { y: root.revealOffset }
 
+    IslandTokens { id: tokens }
+
     IslandContentReveal {
         target: root
         active: root.showCondition
@@ -40,100 +47,137 @@ Item {
 
     Item {
         anchors.fill: parent
-        anchors.topMargin: 18
-        anchors.bottomMargin: 18
-        anchors.leftMargin: 34
-        anchors.rightMargin: 34
+        anchors.leftMargin: 16
+        anchors.rightMargin: 16
+        anchors.topMargin: 12
+        anchors.bottomMargin: 14
 
-        Rectangle {
-            id: thumbnailFrame
+        // --- Header: chip + title + filename -------------------------------
+        Item {
+            id: header
 
             anchors.left: parent.left
+            anchors.right: parent.right
             anchors.top: parent.top
-            width: 128
-            height: 84
-            radius: 12
-            color: "#14ffffff"
-            border.width: 1
-            border.color: "#26ffffff"
-            clip: true
+            height: 36
 
-            Image {
-                anchors.fill: parent
-                anchors.margins: 1
-                source: root.filePath !== "" ? "file://" + root.filePath : ""
-                fillMode: Image.PreserveAspectCrop
-                asynchronous: true
-                cache: false
-                smooth: true
+            Rectangle {
+                id: chip
+
+                anchors.left: parent.left
+                anchors.verticalCenter: parent.verticalCenter
+                width: 36
+                height: 36
+                radius: 9
+                color: tokens.chip
+
+                Text {
+                    anchors.centerIn: parent
+                    text: tokens.glyphCamera
+                    color: tokens.accent
+                    font.family: root.iconFontFamily
+                    font.pixelSize: 17
+                }
             }
 
-            MouseArea {
-                anchors.fill: parent
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.openRequested()
+            Column {
+                anchors.left: chip.right
+                anchors.leftMargin: 10
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 2
+
+                Text {
+                    width: parent.width
+                    text: "Screenshot Saved"
+                    color: tokens.fg
+                    elide: Text.ElideRight
+                    font.family: root.heroFontFamily !== "" ? root.heroFontFamily : root.textFontFamily
+                    font.pixelSize: 13
+                    font.weight: Font.DemiBold
+                }
+
+                Text {
+                    width: parent.width
+                    text: root.displayName
+                    color: tokens.fg55
+                    elide: Text.ElideMiddle
+                    font.family: root.textFontFamily
+                    font.pixelSize: 11
+                }
             }
         }
 
-        Text {
-            id: title
-
-            anchors.left: thumbnailFrame.right
-            anchors.leftMargin: 16
-            anchors.top: thumbnailFrame.top
-            anchors.right: parent.right
-            text: "Screenshot saved"
-            color: "#ffffff"
-            elide: Text.ElideRight
-            font.family: root.heroFontFamily !== "" ? root.heroFontFamily : root.textFontFamily
-            font.pixelSize: root.userConfig.titleFontSize
-            font.weight: Font.DemiBold
-        }
-
-        Text {
-            id: subtitle
-
-            anchors.left: title.left
-            anchors.right: parent.right
-            anchors.top: title.bottom
-            anchors.topMargin: 4
-            text: root.displayName
-            color: "#99ffffff"
-            elide: Text.ElideMiddle
-            font.family: root.textFontFamily
-            font.pixelSize: Math.max(11, root.userConfig.bodyFontSize - 3)
-        }
-
+        // --- Action pills --------------------------------------------------
         Row {
-            anchors.left: title.left
-            anchors.bottom: thumbnailFrame.bottom
-            spacing: 8
+            id: actionRow
 
-            IslandActionButton {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            spacing: 6
+
+            readonly property real cellWidth: (width - spacing * 3) / 4
+
+            IslandActionPill {
+                width: actionRow.cellWidth
+                glyph: tokens.glyphCopy
                 label: "Copy"
-                accent: true
+                iconFontFamily: root.iconFontFamily
                 textFontFamily: root.textFontFamily
                 onActivated: root.copyRequested()
             }
 
-            IslandActionButton {
+            IslandActionPill {
+                width: actionRow.cellWidth
+                glyph: tokens.glyphMarkup
                 label: "Markup"
+                iconFontFamily: root.iconFontFamily
                 textFontFamily: root.textFontFamily
                 onActivated: root.annotateRequested()
             }
 
-            IslandActionButton {
+            IslandActionPill {
+                width: actionRow.cellWidth
+                glyph: tokens.glyphOpen
                 label: "Open"
+                iconFontFamily: root.iconFontFamily
                 textFontFamily: root.textFontFamily
                 onActivated: root.openRequested()
             }
 
-            IslandActionButton {
+            IslandActionPill {
+                width: actionRow.cellWidth
+                glyph: tokens.glyphTrash
                 label: "Delete"
                 destructive: true
+                iconFontFamily: root.iconFontFamily
                 textFontFamily: root.textFontFamily
                 onActivated: root.deleteRequested()
             }
+        }
+    }
+
+    // --- Life bar ----------------------------------------------------------
+    Rectangle {
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.leftMargin: 16
+        anchors.rightMargin: 16
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 6
+        height: 2
+        radius: 1
+        color: "#1affffff"
+        clip: true
+
+        Rectangle {
+            anchors.left: parent.left
+            anchors.top: parent.top
+            anchors.bottom: parent.bottom
+            width: parent.width * Math.max(0, Math.min(1, root.lifeProgress))
+            radius: 1
+            color: tokens.fg35
         }
     }
 }

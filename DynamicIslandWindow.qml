@@ -239,6 +239,15 @@ PanelWindow {
         : root.islandRestingHeight * (56.0 / 37.0)
     readonly property var iosMorphCurve: [0.32, 0.72, 0.0, 1.0, 1.0, 1.0]
 
+    // Exact metrics from the approved iOS reference build (SPECS table),
+    // clamped so the capsule never overruns a narrow display.
+    readonly property real iosRecordingWidth: Math.min(root.width - 48, 340)
+    readonly property real iosRecordingHeight: 92
+    readonly property real iosShotWidth: Math.min(root.width - 48, 348)
+    readonly property real iosShotHeight: 106
+    readonly property real iosControlWidth: Math.min(root.width - 48, 372)
+    readonly property real iosControlHeight: 178
+
     // One rule for every size: radius is always half the height, so the shape is
     // a perfect capsule whether it is the resting pill, a compact activity or a
     // fully expanded card-sized pill. Derived from the live height, so corners
@@ -2369,11 +2378,10 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "capture_recording":
-                    // Wide enough for the elapsed timer on the left and the
-                    // pause/stop buttons on the right, like the iOS pill.
-                    return Math.max(root.islandRestingWidth, root.iosCompactWidth * 1.25);
+                    // Reference metric from the approved iOS mock: 340 x 92.
+                    return Math.max(root.islandRestingWidth, root.iosRecordingWidth);
                 case "capture_screenshot":
-                    return root.iosExpandedWidth;
+                    return root.iosShotWidth;
                 case "split":
                     return islandContainer.splitCapsuleWidth;
                 case "long_capsule":
@@ -2392,7 +2400,7 @@ PanelWindow {
                 case "lyrics":
                     return islandContainer.lyricsCapsuleWidth;
                 case "control_center":
-                    return root.iosExpandedWidth;
+                    return root.iosControlWidth;
                 case "notification_center":
                     return root.iosExpandedWidth;
                 case "wallpaper_picker":
@@ -2416,9 +2424,11 @@ PanelWindow {
 
                 switch (islandContainer.islandState) {
                 case "capture_screenshot":
-                    return root.iosExpandedHeight;
+                    return root.iosShotHeight;
+                case "capture_recording":
+                    return root.iosRecordingHeight;
                 case "control_center":
-                    return root.iosExpandedHeight * 2 + (controlCenterLoader.item ? controlCenterLoader.item.controlCenterExtraHeight : 32);
+                    return root.iosControlHeight;
                 case "notification_center":
                     return notificationCenterLoader.item ? notificationCenterLoader.item.contentHeight : 200;
                 case "wallpaper_picker":
@@ -3287,7 +3297,8 @@ PanelWindow {
                             if (root.captureController)
                                 root.captureController.togglePauseRecording();
                         }
-                        textFontFamily: root.timeFontFamily
+                        textFontFamily: root.textFontFamily
+                        heroFontFamily: root.timeFontFamily
                         showCondition: islandContainer.captureRecordingLayerVisible
                         onStopRequested: {
                             islandContainer.suppressCapsuleClick(true);
@@ -3374,38 +3385,10 @@ PanelWindow {
                 visible: active
 
                 sourceComponent: Component {
-                    ControlCenterLayer {
+                    IosControlCenterLayer {
                         iconFontFamily: root.iconFontFamily
                         textFontFamily: root.textFontFamily
-                        heroFontFamily: root.heroFontFamily
-                        sliderIntroDelay: mainCapsule.morphDuration
-                        currentTime: timeObj.currentTime
-                        currentDateLabel: timeObj.currentDateLabel
-                        batteryCapacity: islandContainer.batteryCapacity
-                        isCharging: islandContainer.isCharging
-                        volumeLevel: islandContainer.currentVolume
-                        brightnessLevel: islandContainer.currentBrightness
-                        currentWorkspace: islandContainer.currentWs
-                        currentTrack: islandContainer.currentTrack
-                        currentArtist: islandContainer.currentArtist
-                        nightLightEnabled: root.shellRootController && root.shellRootController.nightLightEnabled !== undefined
-                            ? root.shellRootController.nightLightEnabled
-                            : false
                         showCondition: islandContainer.controlCenterLayerVisible
-                        onFocusModeChanged: function(enabled) {
-                            if (root.shellRootController && root.shellRootController.focusEnabled !== undefined)
-                                root.shellRootController.focusEnabled = enabled;
-                        }
-                        onNightLightModeChanged: function(enabled) {
-                            if (root.shellRootController && root.shellRootController.nightLightEnabled !== undefined)
-                                root.shellRootController.nightLightEnabled = enabled;
-                        }
-                        onRequestNotification: function(appName, summary, body) {
-                            islandContainer.showNotificationCapsule(appName, summary, body);
-                        }
-                        onConnectivityPanelRequested: function(kind, open) {
-                            root.setConnectivityDetailVisible(kind, open);
-                        }
                     }
                 }
             }
