@@ -25,12 +25,13 @@ PanelWindow {
     readonly property var userConfig: UserConfig
 
     // The nucleus island is always the reference idle pill (148 x 34).
-    readonly property real islandRestingWidth: 148
-    readonly property real islandRestingHeight: 34
+    readonly property real islandScale: Math.max(0.6, Math.min(1.6, userConfig.islandScale / 100))
+    readonly property real islandRestingWidth: 148 * root.islandScale
+    readonly property real islandRestingHeight: 34 * root.islandScale
     // Mirrors DynamicIslandWindow: the island is a floating capsule now, so even
     // in notch-metrics mode it sits a few px below the screen edge and the bar
     // baseline follows it.
-    readonly property real islandTopOffset: Math.max(6, userConfig.islandTopMargin)
+    readonly property real islandTopOffset: Math.max(0, userConfig.islandTopMargin)
 
     // Where the resting island sits. Bar content is laid out around this fixed
     // rectangle and never around the live capsule.

@@ -1,467 +1,256 @@
 import QtQuick
-import QtQuick.Controls
+import QtQuick.Controls.Basic
+import QtQuick.Window
 import TideIsland 1.0
 
 ApplicationWindow {
     id: window
+
+    width: 1020
+    height: 720
+    minimumWidth: 860
+    minimumHeight: 560
     visible: true
-    width: 1000
-    height: 600
-    title: "Tide Island Config Application"
-    color: Theme.totalBgColor
-    palette.window: Theme.totalBgColor
-    palette.windowText: Theme.textColor
-    palette.base: Theme.inputBgColor
-    palette.alternateBase: Theme.componentBgColor
-    palette.text: Theme.textColor
-    palette.button: Theme.mutedButtonColor
-    palette.buttonText: Theme.mutedButtonTextColor
-    palette.highlight: Theme.selectedColor
-    palette.highlightedText: Theme.buttonTextColor
-    palette.placeholderText: Theme.subtleTextColor
+    title: "Tide Island Settings"
+    color: AppTheme.windowBg
 
-    property int currentPage: 1
-
-    Behavior on color {
-        ColorAnimation { duration: Theme.animationDuration }
+    FontLoader {
+        source: "qrc:/RES/InterVariable.ttf"
     }
 
-    function pageForIndex(index) {
-        switch (index) {
-        case 1:
-            return generalPage
-        case 2:
-            return wallpaperPage
-        case 3:
-            return fontPage
-        case 4:
-            return shortcutPage
-        case 5:
-            return interactionPage
-        case 6:
-            return statusBarPage
-        case 7:
-            return capturePage
-        default:
-            return null
-        }
-    }
+    readonly property var pages: [
+        { title: "Island", subtitle: "Placement, scale, shape", glyph: "◗", source: "PageIsland.qml" },
+        { title: "Status bar", subtitle: "Spacing and modules", glyph: "▤", source: "PageStatusBar.qml" },
+        { title: "Appearance", subtitle: "Fonts and sizes", glyph: "✿", source: "PageAppearance.qml" },
+        { title: "Capture", subtitle: "Screenshots and recording", glyph: "◉", source: "PageCapture.qml" },
+        { title: "Shortcuts", subtitle: "Keybinds and IPC", glyph: "⌘", source: "PageShortcuts.qml" },
+        { title: "About", subtitle: "Config file and resets", glyph: "ⓘ", source: "PageAbout.qml" }
+    ]
 
-    function selectPage(index) {
-        if (index === currentPage) {
-            return
-        }
+    property int currentPage: 0
 
-        const nextPage = pageForIndex(index)
-        if (!nextPage) {
-            return
+    // ---- Sidebar -----------------------------------------------------------
+    Rectangle {
+        id: sidebar
+
+        anchors.left: parent.left
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
+        width: 232
+        color: AppTheme.sidebarBg
+
+        Rectangle {
+            anchors.right: parent.right
+            width: 1
+            height: parent.height
+            color: AppTheme.separator
         }
 
-        const previousPage = pageForIndex(currentPage)
-        currentPage = index
+        Column {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: 14
+            spacing: 4
 
-        if (previousPage) {
-            previousPage.hidePage()
-        }
+            Item {
+                width: parent.width
+                height: 62
 
-        if (nextPage) {
-            nextPage.showPage()
-        }
-    }
+                Rectangle {
+                    id: mark
 
-    Rectangle{// main split line
-        id:mainSplitLine
-        height: parent.height - 60
-        width:2
-        color: Theme.splitLineColor
-        x: 180
-        y: 30
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: 4
+                    width: 40
+                    height: 15
+                    radius: 7
+                    color: "#000000"
 
-        DragHandler {
-            target: parent
-            xAxis.enabled: true
-            yAxis.enabled: false
-            xAxis.minimum: 50
-            xAxis.maximum: 250
-        }
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: parent.radius
+                        gradient: Gradient {
+                            GradientStop { position: 0.0; color: "#22ffffff" }
+                            GradientStop { position: 0.6; color: "#00ffffff" }
+                        }
+                    }
+                }
 
-        MouseArea{
-            anchors.fill:parent
-            acceptedButtons: Qt.NoButton
-            cursorShape: Qt.SizeHorCursor
-        }
-    }
+                Column {
+                    anchors.left: mark.right
+                    anchors.leftMargin: 12
+                    anchors.verticalCenter: parent.verticalCenter
+                    spacing: 1
 
-    Item{
-        id: outline
-        width: mainSplitLine.x
-        height:window.height
-        
-        Text{
-            id: title
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 80
-            color: Theme.textColor
-            text: tideIslandText.width > mainSplitLine.x ? "T" : "Tide Island"
-            font.pixelSize: 23
-            font.family: Theme.titleFontFamily
+                    Text {
+                        text: "Tide Island"
+                        color: AppTheme.text
+                        font.family: AppTheme.fontFamily
+                        font.pixelSize: 15
+                        font.weight: Font.DemiBold
+                    }
 
-            TextMetrics {
-                id: tideIslandText
-                font: islandButton.font
-                text: "Tide Island"
-            }
-
-            Behavior on color {ColorAnimation{ duration:Theme.animationDuration}}
-
-            MouseArea{
-                hoverEnabled: true
-                anchors.fill: parent
-                onEntered: title.color = Theme.selectedColor
-                onExited: title.color = Theme.textColor
-                onClicked: Qt.openUrlExternally("https://github.com/enhaoswen/Tide-island")
-            }
-        }
-
-        Text{
-            id: islandButton
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 210
-            color: currentPage === 1 ? Theme.selectedColor : Theme.textColor
-            text: islandButtonText.width > mainSplitLine.x ? "G" : "General"
-            font.family: Theme.titleFontFamily
-            font.pixelSize: 23
-
-            TextMetrics {
-                id: islandButtonText
-                font: islandButton.font
-                text: "General"
-            }
-
-            Behavior on color {ColorAnimation{ duration:Theme.animationDuration}}
-
-            MouseArea{
-                anchors.fill:parent
-
-                onClicked: {
-                    selectPage(1)
+                    Text {
+                        text: "Settings"
+                        color: AppTheme.textFaint
+                        font.family: AppTheme.fontFamily
+                        font.pixelSize: 12
+                    }
                 }
             }
-        }
 
-        Text{
-            id: wallpaperButton
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 265
-            color: currentPage === 2 ? Theme.selectedColor : Theme.textColor
-            text: wallpaperButtonText.width > mainSplitLine.x ? "W" : "Wallpaper"
-            font.family: Theme.titleFontFamily
-            font.pixelSize: 23
+            Repeater {
+                model: window.pages
 
-            TextMetrics {
-                id: wallpaperButtonText
-                font: wallpaperButton.font
-                text: "Wallpaper"
-            }
+                delegate: Rectangle {
+                    id: navItem
 
-            Behavior on color {ColorAnimation{ duration:Theme.animationDuration}}
+                    required property int index
+                    required property var modelData
 
-            MouseArea{
-                anchors.fill:parent
+                    readonly property bool active: window.currentPage === navItem.index
 
-                onClicked: {
-                    selectPage(2)
-                }
-            }
-        }
+                    width: parent.width
+                    height: 46
+                    radius: 11
+                    color: navItem.active
+                        ? AppTheme.accent
+                        : (navHover.hovered ? AppTheme.rowHover : "transparent")
 
-        Text{
-            id: fontButton
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 320
-            color: currentPage === 3 ? Theme.selectedColor : Theme.textColor
-            text: fontButtonText.width > mainSplitLine.x ? "F" : "Font"
-            font.family: Theme.titleFontFamily
-            font.pixelSize: 23
+                    Behavior on color { ColorAnimation { duration: AppTheme.animation } }
 
-            TextMetrics {
-                id: fontButtonText
-                font: fontButton.font
-                text: "Font"
-            }
+                    HoverHandler { id: navHover }
 
-            Behavior on color {ColorAnimation{ duration:Theme.animationDuration}}
+                    Text {
+                        id: navGlyph
 
-            MouseArea{
-                anchors.fill:parent
+                        x: 12
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: navItem.modelData.glyph
+                        color: navItem.active ? "#ffffff" : AppTheme.textDim
+                        font.pixelSize: 15
+                    }
 
-                onClicked: {
-                    selectPage(3)
-                }
-            }
-        }
+                    Column {
+                        anchors.left: navGlyph.right
+                        anchors.leftMargin: 12
+                        anchors.right: parent.right
+                        anchors.rightMargin: 10
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: 1
 
-        Text{
-            id: shortcutButton
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 375
-            color: currentPage === 4 ? Theme.selectedColor : Theme.textColor
-            text: shortcutButtonText.width > mainSplitLine.x ? "S" : "Shortcut"
-            font.family: Theme.titleFontFamily
-            font.pixelSize: 23
+                        Text {
+                            text: navItem.modelData.title
+                            color: navItem.active ? "#ffffff" : AppTheme.text
+                            font.family: AppTheme.fontFamily
+                            font.pixelSize: 13
+                            font.weight: Font.DemiBold
+                        }
 
-            TextMetrics {
-                id: shortcutButtonText
-                font: shortcutButton.font
-                text: "Shortcut"
-            }
+                        Text {
+                            text: navItem.modelData.subtitle
+                            color: navItem.active ? "#e8f1ff" : AppTheme.textFaint
+                            font.family: AppTheme.fontFamily
+                            font.pixelSize: 12
+                            elide: Text.ElideRight
+                            width: parent.width
+                        }
+                    }
 
-            Behavior on color {ColorAnimation{ duration:Theme.animationDuration}}
-
-            MouseArea{
-                anchors.fill:parent
-
-                onClicked: {
-                    selectPage(4)
-                }
-            }
-        }
-
-        Text{
-            id: interactionButton
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 430
-            color: currentPage === 5 ? Theme.selectedColor : Theme.textColor
-            text: interactionButtonText.width > mainSplitLine.x ? "I" : "Interaction"
-            font.family: Theme.titleFontFamily
-            font.pixelSize: 23
-
-            TextMetrics {
-                id: interactionButtonText
-                font:interactionButton.font
-                text: "Interaction"
-            }
-
-            Behavior on color {ColorAnimation{ duration:Theme.animationDuration}}
-
-            MouseArea{
-                anchors.fill:parent
-
-                onClicked: {
-                    selectPage(5)
-                }
-            }
-        }
-
-        Text{
-            id: statusBarButton
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 485
-            color: currentPage === 6 ? Theme.selectedColor : Theme.textColor
-            text: statusBarButtonText.width > mainSplitLine.x ? "B" : "Status Bar"
-            font.family: Theme.titleFontFamily
-            font.pixelSize: 23
-
-            TextMetrics {
-                id: statusBarButtonText
-                font: statusBarButton.font
-                text: "Status Bar"
-            }
-
-            Behavior on color {ColorAnimation{ duration:Theme.animationDuration}}
-
-            MouseArea{
-                anchors.fill:parent
-
-                onClicked: {
-                    selectPage(6)
-                }
-            }
-        }
-
-        Text{
-            id: captureButton
-            anchors.horizontalCenter: parent.horizontalCenter
-            y: 540
-            color: currentPage === 7 ? Theme.selectedColor : Theme.textColor
-            text: captureButtonText.width > mainSplitLine.x ? "C" : "Capture"
-            font.family: Theme.titleFontFamily
-            font.pixelSize: 23
-
-            TextMetrics {
-                id: captureButtonText
-                font: captureButton.font
-                text: "Capture"
-            }
-
-            Behavior on color {ColorAnimation{ duration:Theme.animationDuration}}
-
-            MouseArea{
-                anchors.fill:parent
-
-                onClicked: {
-                    selectPage(7)
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: window.currentPage = navItem.index
+                    }
                 }
             }
         }
 
         Text {
-            id: appearanceButton
-
-            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.left: parent.left
+            anchors.right: parent.right
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 42
-            text: Theme.darkMode ? "Dark" : "Light"
-            color: Theme.textColor
-            font.family: Theme.titleFontFamily
-            font.pixelSize: 23
-
-            Behavior on color {
-                ColorAnimation { duration: Theme.animationDuration }
-            }
-
-            MouseArea {
-                anchors.fill: parent
-                anchors.margins: -10
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onEntered: appearanceButton.color = Theme.selectedColor
-                onExited: appearanceButton.color = Theme.textColor
-                onClicked: backend.setColorScheme(Theme.darkMode ? "light" : "dark")
-            }
+            anchors.margins: 16
+            text: ConfigStore.status !== "" ? ConfigStore.status : ConfigStore.path
+            color: AppTheme.textFaint
+            wrapMode: Text.Wrap
+            elide: Text.ElideMiddle
+            maximumLineCount: 2
+            font.family: AppTheme.fontFamily
+            font.pixelSize: 11
         }
-
     }
 
-
-
-    Item{
-        id: page
-        anchors.left: mainSplitLine.right
+    // ---- Content -----------------------------------------------------------
+    Item {
+        anchors.left: sidebar.right
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
 
-        General{
-            id: generalPage           
-            anchors.fill:parent
-            visible: true
-            opacity: 1
-        }
-
-        WallpaperSettings {
-            id: wallpaperPage
-            anchors.fill: parent
-            visible: false
-            opacity: 0
-        }
-
-        FontSettings {
-            id: fontPage
-            anchors.fill: parent
-            visible: false
-            opacity: 0
-        }
-
-        Shortcut {
-            id: shortcutPage
-            anchors.fill: parent
-            visible: false
-            opacity: 0
-        }
-
-        Interaction {
-            id: interactionPage
-            anchors.fill: parent
-            visible: false
-            opacity: 0
-        }
-
-        StatusBar {
-            id: statusBarPage
-            anchors.fill: parent
-            visible: false
-            opacity: 0
-        }
-
-        CaptureSettings {
-            id: capturePage
-            anchors.fill: parent
-            visible: false
-            opacity: 0
-        }
-
-    }
-
-    Rectangle {
-        id: configErrorBanner
-
-        readonly property bool hasError: ConfigStore.errorString.length > 0
-
-        z: 20
-        visible: hasError
-        opacity: hasError ? 1 : 0
-        anchors.left: mainSplitLine.right
-        anchors.leftMargin: 24
-        anchors.right: parent.right
-        anchors.rightMargin: 24
-        anchors.bottom: parent.bottom
-        anchors.bottomMargin: 18
-        height: Math.max(48, errorText.implicitHeight + 20)
-        radius: 8
-        color: Theme.errorBgColor
-        border.width: 1
-        border.color: Theme.errorBorderColor
-
-        Behavior on opacity { NumberAnimation { duration: Theme.animationDuration } }
-
-        Text {
-            id: errorText
+        Item {
+            id: header
 
             anchors.left: parent.left
-            anchors.leftMargin: 16
-            anchors.right: rewriteButton.left
-            anchors.rightMargin: 16
-            anchors.verticalCenter: parent.verticalCenter
-            text: "Config file error: " + ConfigStore.errorString
-            color: Theme.errorTextColor
-            wrapMode: Text.Wrap
-            maximumLineCount: 2
-            elide: Text.ElideRight
-            font.family: Theme.textFontFamily
-            font.pixelSize: 13
-        }
-
-        Rectangle {
-            id: rewriteButton
-
-            width: 112
-            height: 32
             anchors.right: parent.right
-            anchors.rightMargin: 10
-            anchors.verticalCenter: parent.verticalCenter
-            radius: 6
-            color: rewriteMouse.pressed ? Theme.buttonPressedColor
-                                        : rewriteMouse.containsMouse ? Theme.buttonHoverColor
-                                                                    : Theme.buttonColor
-
-            Behavior on color { ColorAnimation { duration: Theme.animationDuration } }
+            anchors.top: parent.top
+            height: 68
 
             Text {
-                anchors.centerIn: parent
-                text: "Rewrite"
-                color: Theme.buttonTextColor
-                font.family: Theme.textFontFamily
-                font.pixelSize: 13
+                anchors.left: parent.left
+                anchors.leftMargin: 26
+                anchors.verticalCenter: parent.verticalCenter
+                text: window.pages[window.currentPage].title
+                color: AppTheme.text
+                font.family: AppTheme.fontFamily
+                font.pixelSize: 22
+                font.weight: Font.DemiBold
             }
 
-            MouseArea {
-                id: rewriteMouse
+            Text {
+                anchors.right: parent.right
+                anchors.rightMargin: 26
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Changes apply live"
+                color: AppTheme.textFaint
+                font.family: AppTheme.fontFamily
+                font.pixelSize: 12
+            }
+        }
 
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: ConfigStore.save()
+        ScrollView {
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: header.bottom
+            anchors.bottom: parent.bottom
+            contentWidth: availableWidth
+            clip: true
+
+            Item {
+                width: parent.width
+                implicitHeight: loader.implicitHeight + 52
+
+                Loader {
+                    id: loader
+
+                    x: 26
+                    y: 4
+                    width: parent.width - 52
+                    source: window.pages[window.currentPage].source
+
+                    onLoaded: {
+                        if (item)
+                            item.width = loader.width;
+                    }
+                }
+
+                Binding {
+                    target: loader.item
+                    property: "width"
+                    value: loader.width
+                    when: loader.item !== null
+                }
             }
         }
     }

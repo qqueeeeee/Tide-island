@@ -59,6 +59,12 @@ QVariantList defaultShortcutBindings()
         shortcutMap(QStringLiteral("SUPER"), QStringLiteral("W"), QStringLiteral("tide"), QStringLiteral("toggleWallpaperPicker")),
         shortcutMap(QStringLiteral("SUPER"), QStringLiteral("slash"), QStringLiteral("tide"), QStringLiteral("toggleApplicationLauncher")),
         shortcutMap(QStringLiteral("SUPER"), QStringLiteral("F"), QStringLiteral("island"), QStringLiteral("toggle")),
+        // Nucleus panels and capture, matching the reference UI.
+        shortcutMap(QStringLiteral("SUPER"), QStringLiteral("SPACE"), QStringLiteral("island"), QStringLiteral("launcher")),
+        shortcutMap(QStringLiteral("SUPER"), QStringLiteral("V"), QStringLiteral("island"), QStringLiteral("clipboard")),
+        shortcutMap(QStringLiteral("SUPER"), QStringLiteral("comma"), QStringLiteral("settings"), QStringLiteral("open")),
+        shortcutMap(QStringLiteral("SUPER SHIFT"), QStringLiteral("S"), QStringLiteral("capture"), QStringLiteral("screenshotArea")),
+        shortcutMap(QStringLiteral("SUPER SHIFT"), QStringLiteral("R"), QStringLiteral("capture"), QStringLiteral("toggleRecording")),
     };
 }
 
@@ -234,8 +240,6 @@ QVariantList normalizedShortcutBindings(const QVariantList &shortcutBindings)
     for (const QVariant &value : shortcutBindings) {
         const ShortcutBinding binding = migratedShortcutBinding(bindingFromVariant(value));
         if (binding.target.isEmpty() || binding.method.isEmpty())
-            continue;
-        if (isIslandBinding(binding) && binding.method.compare(QStringLiteral("toggle"), Qt::CaseInsensitive) != 0)
             continue;
 
         normalized.append(shortcutMap(binding.mods, binding.key, binding.target, binding.method));

@@ -54,6 +54,13 @@ class UserConfigBackend final : public QObject {
     Q_PROPERTY(int islandHeight READ islandHeight NOTIFY islandHeightChanged FINAL)
     Q_PROPERTY(int islandExclusiveZone READ islandExclusiveZone NOTIFY islandExclusiveZoneChanged FINAL)
     Q_PROPERTY(int islandTopMargin READ islandTopMargin NOTIFY islandTopMarginChanged FINAL)
+    Q_PROPERTY(int islandScale READ islandScale NOTIFY islandScaleChanged FINAL)
+    Q_PROPERTY(int islandCornerRadius READ islandCornerRadius NOTIFY islandCornerRadiusChanged FINAL)
+    Q_PROPERTY(int islandBottomGap READ islandBottomGap NOTIFY islandBottomGapChanged FINAL)
+    Q_PROPERTY(bool islandReserveSpace READ islandReserveSpace NOTIFY islandReserveSpaceChanged FINAL)
+    Q_PROPERTY(int statusBarIslandGap READ statusBarIslandGap NOTIFY statusBarIslandGapChanged FINAL)
+    Q_PROPERTY(int statusBarItemSpacing READ statusBarItemSpacing NOTIFY statusBarItemSpacingChanged FINAL)
+    Q_PROPERTY(int statusBarBaselineOffset READ statusBarBaselineOffset NOTIFY statusBarBaselineOffsetChanged FINAL)
     Q_PROPERTY(int islandPositionX READ islandPositionX NOTIFY islandPositionXChanged FINAL)
     Q_PROPERTY(bool islandMacNotchStyle READ islandMacNotchStyle NOTIFY islandMacNotchStyleChanged FINAL)
     Q_PROPERTY(int islandBackgroundOpacity READ islandBackgroundOpacity NOTIFY islandBackgroundOpacityChanged FINAL)
@@ -122,6 +129,13 @@ public:
     int islandHeight() const;
     int islandExclusiveZone() const;
     int islandTopMargin() const;
+    int islandScale() const;
+    int islandCornerRadius() const;
+    int islandBottomGap() const;
+    bool islandReserveSpace() const;
+    int statusBarIslandGap() const;
+    int statusBarItemSpacing() const;
+    int statusBarBaselineOffset() const;
     int islandPositionX() const;
     bool islandMacNotchStyle() const;
     int islandBackgroundOpacity() const;
@@ -192,6 +206,13 @@ signals:
     void islandHeightChanged();
     void islandExclusiveZoneChanged();
     void islandTopMarginChanged();
+    void islandScaleChanged();
+    void islandCornerRadiusChanged();
+    void islandBottomGapChanged();
+    void islandReserveSpaceChanged();
+    void statusBarIslandGapChanged();
+    void statusBarItemSpacingChanged();
+    void statusBarBaselineOffsetChanged();
     void islandPositionXChanged();
     void islandMacNotchStyleChanged();
     void islandBackgroundOpacityChanged();
@@ -263,6 +284,13 @@ private:
     int m_islandHeight = 37;
     int m_islandExclusiveZone = 45;
     int m_islandTopMargin = 11;
+    int m_islandScale = 100;
+    int m_islandCornerRadius = 32;
+    int m_islandBottomGap = 8;
+    bool m_islandReserveSpace = true;
+    int m_statusBarIslandGap = 14;
+    int m_statusBarItemSpacing = 14;
+    int m_statusBarBaselineOffset = 0;
     int m_islandPositionX = 50;
     bool m_islandMacNotchStyle = true;
     int m_bodyFontSize = 16;

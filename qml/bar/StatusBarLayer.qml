@@ -49,7 +49,10 @@ Item {
     signal statusClusterActivated()
 
     readonly property real sideMargin: userConfig.statusBarSideMargin
-    readonly property real contentGap: 14
+    // Gap between the island capsule and the nearest bar item.
+    readonly property real contentGap: userConfig.statusBarIslandGap
+    // Spacing between items inside each cluster.
+    readonly property real itemSpacing: userConfig.statusBarItemSpacing
     readonly property real barOpacity: Math.max(0, Math.min(1, userConfig.statusBarOpacity / 100))
     // macOS behaviour: bar content never disappears when the island grows, it just
     // dims a touch so the island reads as the focused surface.
@@ -68,7 +71,7 @@ Item {
     // Never fall back to the live capsule height: that made the bar ride down
     // with the island whenever it expanded.
     readonly property real restingHeight: capsuleRestingHeight > 0 ? capsuleRestingHeight : 34
-    readonly property real baselineY: capsuleY + restingHeight / 2
+    readonly property real baselineY: capsuleY + restingHeight / 2 + userConfig.statusBarBaselineOffset
     readonly property real slideDistance: 6
 
 
@@ -106,7 +109,7 @@ Item {
 
         x: root.sideMargin - hideProgress * root.slideDistance
         y: root.baselineY - height / 2
-        spacing: root.contentGap
+        spacing: root.itemSpacing
         opacity: 1 - hideProgress
 
         Behavior on opacity {
@@ -143,7 +146,7 @@ Item {
 
         x: root.width - root.sideMargin - width + hideProgress * root.slideDistance
         y: root.baselineY - height / 2
-        spacing: root.contentGap
+        spacing: root.itemSpacing
         opacity: 1 - hideProgress
 
         Behavior on opacity {

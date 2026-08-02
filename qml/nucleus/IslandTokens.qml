@@ -78,6 +78,7 @@ Item {
     readonly property string glyphVolumeLow: "\uf027"
     readonly property string glyphCamera: "\uf030"
     readonly property string glyphVideo: "\uf03d"
+    readonly property string glyphGear: "\uf013"
     readonly property string glyphCopy: "\uf0c5"
     readonly property string glyphMarkup: "\uf040"
     readonly property string glyphOpen: "\uf08e"

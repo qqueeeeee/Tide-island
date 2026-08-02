@@ -45,6 +45,9 @@ Item {
     property real volumeValue: 0
     property real brightnessValue: 0
 
+    // Emitted after the settings app is launched so the island can close.
+    signal settingsRequested()
+
     anchors.fill: parent
     opacity: 0
     transform: Translate { y: root.revealOffset }
@@ -106,6 +109,12 @@ Item {
     }
 
     Process {
+        id: settingsProcess
+
+        command: ["sh", "-c", "tide-island-config-app >/dev/null 2>&1 || /usr/bin/tide-island-config-app >/dev/null 2>&1"]
+    }
+
+    Process {
         id: nightLightProcess
 
         property bool enable: false
@@ -130,7 +139,7 @@ Item {
             anchors.top: parent.top
             spacing: 8
 
-            readonly property real cellWidth: (width - spacing * 3) / 4
+            readonly property real cellWidth: (width - spacing * 4) / 5
 
             Repeater {
                 model: [
@@ -157,6 +166,12 @@ Item {
                         glyph: tokens.glyphMoon,
                         label: "Night Light",
                         active: root.nightLightEnabled
+                    },
+                    {
+                        key: "settings",
+                        glyph: tokens.glyphGear,
+                        label: "Settings",
+                        active: false
                     }
                 ]
 
@@ -234,6 +249,11 @@ Item {
     }
 
     function handleToggle(key) {
+        if (key === "settings") {
+            settingsProcess.running = true;
+            root.settingsRequested();
+            return;
+        }
         if (key === "wifi") {
             if (root.wifiController) root.wifiController.setEnabled(!root.wifiEnabled);
         } else if (key === "bluetooth") {

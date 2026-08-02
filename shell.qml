@@ -77,14 +77,70 @@ Scope {
         function close() {
             shellRoot.forEachIsland((island) => island.closePanel());
         }
+
+        // Legacy SUPER+F binding: reveal the Control Centre, or dismiss
+        // whatever panel is currently open.
+        function toggle() {
+            shellRoot.forEachIsland((island) => island.toggleControlCentre());
+        }
     }
 
 
+    // Compatibility target: shortcut names shipped by older Tide Island
+    // configs still work, mapped onto the nucleus panels.
     IpcHandler {
         target: "tide"
 
         function toggleControlCenter() {
             shellRoot.forEachIsland((island) => island.toggleControlCentre());
+        }
+
+        function toggleNotificationCenter() {
+            shellRoot.forEachIsland((island) => island.toggleNotifications());
+        }
+
+        function toggleApplicationLauncher() {
+            shellRoot.forEachIsland((island) => island.toggleLauncher());
+        }
+
+        function togglePlayer() {
+            shellRoot.forEachIsland((island) => island.toggleControlCentre());
+        }
+
+        function showClock() {
+            shellRoot.forEachIsland((island) => island.closePanel());
+        }
+
+        function swipeRight() {
+            shellRoot.forEachIsland((island) => island.toggleWorkspaces());
+        }
+
+        function swipeLeft() {
+            shellRoot.forEachIsland((island) => island.toggleClipboard());
+        }
+
+        function toggleWallpaperPicker() {
+            shellRoot.forEachIsland((island) => island.toggleWorkspaces());
+        }
+    }
+
+    IpcHandler {
+        target: "overview"
+
+        function toggle() {
+            shellRoot.forEachIsland((island) => island.toggleWorkspaces());
+        }
+    }
+
+    IpcHandler {
+        target: "settings"
+
+        function open() {
+            settingsApp.running = true;
+        }
+
+        function toggle() {
+            settingsApp.running = true;
         }
     }
 

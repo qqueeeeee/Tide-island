@@ -35,9 +35,13 @@ PanelWindow {
     readonly property string iconFontFamily: userConfig.iconFontFamily
 
     // --- Placement ----------------------------------------------------------
-    readonly property real topMargin: Math.max(6, userConfig.islandTopMargin)
-    readonly property real restingHeight: tokens.idleCompact.height
-    readonly property real restingWidth: tokens.idleCompact.width
+    readonly property real topMargin: Math.max(0, userConfig.islandTopMargin)
+    // User scale factor (islandScale %) applied to the whole capsule so the
+    // reference layouts keep their internal pixel metrics.
+    readonly property real uiScale: Math.max(0.6, Math.min(1.6, userConfig.islandScale / 100))
+    readonly property real cornerRadius: Math.max(4, userConfig.islandCornerRadius)
+    readonly property real restingHeight: tokens.idleCompact.height * root.uiScale
+    readonly property real restingWidth: tokens.idleCompact.width * root.uiScale
 
     // --- Live activity sources ---------------------------------------------
     readonly property bool recordingLive: root.captureController
@@ -142,8 +146,14 @@ PanelWindow {
     screen: screenObject
     color: StyleTokens.transparent
     anchors { top: true; left: true; right: true }
-    exclusiveZone: Math.round(root.topMargin + root.restingHeight)
-    implicitHeight: Math.ceil(root.topMargin + tokens.mediaExpanded.height + 28)
+    // Reserved strip = top margin + resting pill + the gap the user wants
+    // between the island and their windows.
+    exclusiveZone: userConfig.islandReserveSpace
+        ? Math.round(root.topMargin + root.restingHeight + userConfig.islandBottomGap)
+        : 0
+    implicitHeight: Math.ceil(root.topMargin
+        + tokens.workspacesExpanded.height * root.uiScale
+        + userConfig.islandBottomGap + 28)
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "tide-island-nucleus"
     // Search fields and grid navigation need real key events; everything else
@@ -154,10 +164,10 @@ PanelWindow {
 
     // Only the capsule takes input; the rest of the strip stays click-through.
     mask: Region {
-        x: Math.floor(capsuleHost.x + capsule.x) - 2
-        y: Math.floor(capsuleHost.y + capsule.y) - 2
-        width: Math.ceil(capsule.width) + 4
-        height: Math.ceil(capsule.height) + 4
+        x: Math.floor(capsuleHost.x) - 2
+        y: Math.floor(capsuleHost.y) - 2
+        width: Math.ceil(capsuleHost.width) + 4
+        height: Math.ceil(capsuleHost.height) + 4
     }
 
     IslandTokens { id: tokens }
@@ -316,20 +326,26 @@ PanelWindow {
     Item {
         id: capsuleHost
 
-        x: Math.round((root.width - capsule.width) / 2)
+        x: Math.round((root.width - width) / 2)
         y: root.topMargin
-        width: capsule.width
-        height: capsule.height
+        width: capsule.width * root.uiScale
+        height: capsule.height * root.uiScale
 
         Rectangle {
             id: capsule
 
+            // Centred inside the (scaled) host so the visual bounds and the
+            // input mask always agree.
+            x: (capsuleHost.width - width) / 2
+            y: (capsuleHost.height - height) / 2
             width: root.targetSize.width
             height: root.targetSize.height
-            radius: Math.min(height / 2, 32)
-            color: "#000000"
+            radius: Math.min(height / 2, root.cornerRadius)
+            // Opacity lives on the fill so content stays fully legible.
+            color: Qt.rgba(0, 0, 0, Math.max(0.4, Math.min(1, userConfig.islandBackgroundOpacity / 100)))
             clip: true
-            scale: pointer.pressed ? motion.pressScale : 1
+            transformOrigin: Item.Center
+            scale: (pointer.pressed ? motion.pressScale : 1) * root.uiScale
 
             Behavior on width {
                 SpringAnimation {
@@ -503,6 +519,7 @@ PanelWindow {
                 sourceComponent: IosControlCenterLayer {
                     textFontFamily: root.textFontFamily
                     iconFontFamily: root.iconFontFamily
+                    onSettingsRequested: root.closeControlCentre()
                 }
             }
 

@@ -53,7 +53,7 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/shortcut_config_tests.cpp")
     add_test(NAME tide_island_shortcut_config COMMAND tide_island_shortcut_config_tests)
 endif()
 
-set_source_files_properties(Theme.qml ConfigStore.qml PROPERTIES
+set_source_files_properties(AppTheme.qml ConfigStore.qml PROPERTIES
     QT_QML_SINGLETON_TYPE TRUE
 )
 
@@ -64,22 +64,22 @@ qt_add_qml_module(tide-island-config-app
 
     QML_FILES
         Main.qml
-        Theme.qml
+        AppTheme.qml
         ConfigStore.qml
-        PagePanel.qml
-        ConfigTextField.qml
-        HiddenPathDialog.qml
-        General.qml
-        CustomPage.qml
-        Wallpaper.qml
-        WallpaperSettings.qml
-        TlpSettings.qml
-        FontSettings.qml
-        Interaction.qml
-        StatusBar.qml
-        CaptureSettings.qml
-        Shortcut.qml
-        ApplicationLauncherSettings.qml
+        UiCard.qml
+        UiSlider.qml
+        UiSwitch.qml
+        UiSegment.qml
+        UiTextField.qml
+        UiButton.qml
+        ShortcutField.qml
+        IslandPreview.qml
+        PageIsland.qml
+        PageStatusBar.qml
+        PageAppearance.qml
+        PageCapture.qml
+        PageShortcuts.qml
+        PageAbout.qml
 )
 
 install(TARGETS tide-island-config-app

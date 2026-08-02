@@ -316,6 +316,41 @@ int UserConfigBackend::islandTopMargin() const
     return m_islandTopMargin;
 }
 
+int UserConfigBackend::islandScale() const
+{
+    return m_islandScale;
+}
+
+int UserConfigBackend::islandCornerRadius() const
+{
+    return m_islandCornerRadius;
+}
+
+int UserConfigBackend::islandBottomGap() const
+{
+    return m_islandBottomGap;
+}
+
+bool UserConfigBackend::islandReserveSpace() const
+{
+    return m_islandReserveSpace;
+}
+
+int UserConfigBackend::statusBarIslandGap() const
+{
+    return m_statusBarIslandGap;
+}
+
+int UserConfigBackend::statusBarItemSpacing() const
+{
+    return m_statusBarItemSpacing;
+}
+
+int UserConfigBackend::statusBarBaselineOffset() const
+{
+    return m_statusBarBaselineOffset;
+}
+
 int UserConfigBackend::islandPositionX() const
 {
     return m_islandPositionX;
@@ -567,6 +602,10 @@ void UserConfigBackend::loadConfig()
     updateField(this, m_islandHeight, jsonInt(configObject, QLatin1String("islandHeight"), 37), &UserConfigBackend::islandHeightChanged);
     updateField(this, m_islandExclusiveZone, jsonBoundedInt(configObject, QLatin1String("islandExclusiveZone"), 45, 0, 1000), &UserConfigBackend::islandExclusiveZoneChanged);
     updateField(this, m_islandTopMargin, jsonBoundedInt(configObject, QLatin1String("islandTopMargin"), 11, 0, 1000), &UserConfigBackend::islandTopMarginChanged);
+    updateField(this, m_islandScale, jsonBoundedInt(configObject, QLatin1String("islandScale"), 100, 60, 160), &UserConfigBackend::islandScaleChanged);
+    updateField(this, m_islandCornerRadius, jsonBoundedInt(configObject, QLatin1String("islandCornerRadius"), 32, 4, 60), &UserConfigBackend::islandCornerRadiusChanged);
+    updateField(this, m_islandBottomGap, jsonBoundedInt(configObject, QLatin1String("islandBottomGap"), 8, 0, 200), &UserConfigBackend::islandBottomGapChanged);
+    updateField(this, m_islandReserveSpace, jsonBool(configObject, QLatin1String("islandReserveSpace"), true), &UserConfigBackend::islandReserveSpaceChanged);
     updateField(this, m_islandPositionX, jsonInt(configObject, QLatin1String("islandPositionX"), 50), &UserConfigBackend::islandPositionXChanged);
     updateField(this, m_islandMacNotchStyle, jsonBool(configObject, QLatin1String("islandMacNotchStyle"), true), &UserConfigBackend::islandMacNotchStyleChanged);
     updateField(this, m_bodyFontSize, jsonInt(configObject, QLatin1String("bodyFontSize"), 16), &UserConfigBackend::bodyFontSizeChanged);
@@ -575,6 +614,9 @@ void UserConfigBackend::loadConfig()
 
     updateField(this, m_statusBarEnabled, jsonBool(configObject, QLatin1String("statusBarEnabled"), true), &UserConfigBackend::statusBarEnabledChanged);
     updateField(this, m_statusBarSideMargin, jsonBoundedInt(configObject, QLatin1String("statusBarSideMargin"), 22, 0, 400), &UserConfigBackend::statusBarSideMarginChanged);
+    updateField(this, m_statusBarIslandGap, jsonBoundedInt(configObject, QLatin1String("statusBarIslandGap"), 14, 0, 200), &UserConfigBackend::statusBarIslandGapChanged);
+    updateField(this, m_statusBarItemSpacing, jsonBoundedInt(configObject, QLatin1String("statusBarItemSpacing"), 14, 0, 80), &UserConfigBackend::statusBarItemSpacingChanged);
+    updateField(this, m_statusBarBaselineOffset, jsonBoundedInt(configObject, QLatin1String("statusBarBaselineOffset"), 0, -40, 120), &UserConfigBackend::statusBarBaselineOffsetChanged);
     updateField(this, m_statusBarOpacity, jsonBoundedInt(configObject, QLatin1String("statusBarOpacity"), 100, 0, 100), &UserConfigBackend::statusBarOpacityChanged);
     updateField(this, m_statusBarShowWorkspaces, jsonBool(configObject, QLatin1String("statusBarShowWorkspaces"), true), &UserConfigBackend::statusBarShowWorkspacesChanged);
     updateField(this, m_statusBarShowActiveWindow, jsonBool(configObject, QLatin1String("statusBarShowActiveWindow"), true), &UserConfigBackend::statusBarShowActiveWindowChanged);
