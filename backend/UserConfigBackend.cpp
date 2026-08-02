@@ -306,6 +306,11 @@ int UserConfigBackend::islandHeight() const
     return m_islandHeight;
 }
 
+bool UserConfigBackend::islandHeightOverrideEnabled() const
+{
+    return m_islandHeightOverrideEnabled;
+}
+
 int UserConfigBackend::islandExclusiveZone() const
 {
     return m_islandExclusiveZone;
@@ -600,6 +605,7 @@ void UserConfigBackend::loadConfig()
     updateField(this, m_islandWidth, jsonInt(configObject, QLatin1String("islandWidth"), 125), &UserConfigBackend::islandWidthChanged);
     updateField(this, m_islandBackgroundOpacity, jsonBoundedInt(configObject, QLatin1String("islandBackgroundOpacity"), 100, 0, 100), &UserConfigBackend::islandBackgroundOpacityChanged);
     updateField(this, m_islandHeight, jsonInt(configObject, QLatin1String("islandHeight"), 37), &UserConfigBackend::islandHeightChanged);
+    updateField(this, m_islandHeightOverrideEnabled, jsonBool(configObject, QLatin1String("islandHeightOverrideEnabled"), false), &UserConfigBackend::islandHeightOverrideEnabledChanged);
     updateField(this, m_islandExclusiveZone, jsonBoundedInt(configObject, QLatin1String("islandExclusiveZone"), 45, 0, 1000), &UserConfigBackend::islandExclusiveZoneChanged);
     updateField(this, m_islandTopMargin, jsonBoundedInt(configObject, QLatin1String("islandTopMargin"), 11, 0, 1000), &UserConfigBackend::islandTopMarginChanged);
     updateField(this, m_islandScale, jsonBoundedInt(configObject, QLatin1String("islandScale"), 100, 60, 160), &UserConfigBackend::islandScaleChanged);

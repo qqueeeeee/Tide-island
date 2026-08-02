@@ -18,6 +18,8 @@ QtObject {
         // Island geometry
         "islandTopMargin": 11,
         "islandScale": 100,
+        "islandHeightOverrideEnabled": false,
+        "islandHeight": 37,
         "islandCornerRadius": 32,
         "islandBottomGap": 8,
         "islandReserveSpace": true,

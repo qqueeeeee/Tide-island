@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Dialogs
 import TideIsland 1.0
 
 // Wallpaper settings. The built-in apply flow (target copy, library, pywal,
@@ -7,6 +8,32 @@ Column {
     id: root
 
     readonly property bool customCommandActive: ConfigStore.flag("wallpaperCustomCommandEnabled")
+
+    property string libraryDirectory: ""
+    property string appliedPath: ""
+
+    function reloadLibrary() {
+        root.libraryDirectory = backend.wallpaperLibraryDirectory();
+        wallpaperModel.clear();
+        const entries = backend.wallpaperEntries();
+        for (let index = 0; index < entries.length; index++)
+            wallpaperModel.append({ name: String(entries[index].name), path: String(entries[index].path) });
+    }
+
+    function apply(path) {
+        if (backend.applyWallpaper(path)) {
+            root.appliedPath = path;
+            ConfigStore.status = "Wallpaper applied";
+        } else {
+            ConfigStore.status = backend.errorString;
+        }
+    }
+
+    Component.onCompleted: root.reloadLibrary()
+
+    ListModel {
+        id: wallpaperModel
+    }
 
     readonly property var transitionTypes: [
         "none", "simple", "fade", "left", "right", "top", "bottom",
@@ -34,6 +61,134 @@ Column {
             id: inner
             width: parent.width
             spacing: 2
+        }
+    }
+
+    FolderDialog {
+        id: libraryDialog
+
+        title: "Choose a wallpaper folder"
+        onAccepted: {
+            const path = String(selectedFolder).replace("file://", "");
+            ConfigStore.set("wallpaperLibraryPath", decodeURIComponent(path));
+            ConfigStore.flush();
+            root.reloadLibrary();
+        }
+    }
+
+    FileDialog {
+        id: fileDialog
+
+        title: "Choose a wallpaper"
+        nameFilters: ["Images (*.png *.jpg *.jpeg *.webp *.bmp *.avif *.jxl)"]
+        onAccepted: {
+            const path = decodeURIComponent(String(selectedFile).replace("file://", ""));
+            root.apply(path);
+        }
+    }
+
+    UiCard {
+        width: parent.width
+        title: "Wallpaper picker"
+        caption: "Folder: " + (root.libraryDirectory === "" ? "not set" : root.libraryDirectory)
+
+        Row {
+            spacing: 10
+
+            UiButton {
+                text: "Choose folder…"
+                onClicked: libraryDialog.open()
+            }
+
+            UiButton {
+                text: "Pick a file…"
+                onClicked: fileDialog.open()
+            }
+
+            UiButton {
+                text: "Reload"
+                onClicked: root.reloadLibrary()
+            }
+        }
+
+        Text {
+            width: parent.width
+            visible: wallpaperModel.count === 0
+            text: root.libraryDirectory === ""
+                ? "Pick a folder to see your wallpapers here."
+                : "No images found in " + root.libraryDirectory
+            color: AppTheme.textFaint
+            wrapMode: Text.WordWrap
+            font.family: AppTheme.fontFamily
+            font.pixelSize: 12
+        }
+
+        GridView {
+            id: grid
+
+            width: parent.width
+            visible: wallpaperModel.count > 0
+            height: visible ? Math.min(430, Math.ceil(wallpaperModel.count / Math.max(1, Math.floor(width / cellWidth))) * cellHeight) : 0
+            cellWidth: 176
+            cellHeight: 116
+            clip: true
+            model: wallpaperModel
+
+            delegate: Item {
+                required property int index
+                required property string name
+                required property string path
+
+                width: grid.cellWidth
+                height: grid.cellHeight
+
+                Rectangle {
+                    anchors.fill: parent
+                    anchors.margins: 5
+                    radius: 12
+                    color: AppTheme.dark ? "#101014" : "#f1f1f5"
+                    border.width: root.appliedPath === path ? 2 : 1
+                    border.color: root.appliedPath === path ? AppTheme.accent : AppTheme.cardBorder
+                    clip: true
+
+                    Image {
+                        anchors.fill: parent
+                        anchors.margins: 2
+                        source: "file://" + encodeURI(path)
+                        asynchronous: true
+                        cache: false
+                        fillMode: Image.PreserveAspectCrop
+                        sourceSize.width: 340
+                        smooth: true
+                    }
+
+                    Rectangle {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        height: 22
+                        color: "#000000aa"
+
+                        Text {
+                            anchors.fill: parent
+                            anchors.leftMargin: 7
+                            anchors.rightMargin: 7
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideMiddle
+                            text: name
+                            color: "#ffffff"
+                            font.family: AppTheme.fontFamily
+                            font.pixelSize: 11
+                        }
+                    }
+
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: root.apply(path)
+                    }
+                }
+            }
         }
     }
 

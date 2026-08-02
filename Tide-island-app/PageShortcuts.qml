@@ -38,7 +38,7 @@ Column {
         width: parent.width
         title: "Keyboard shortcuts"
         caption: "Compositor detected: " + backend.compositorDisplayName()
-            + ". Applying writes a managed config block and reloads your compositor."
+            + ". Saving stores the binds for Tide Island; copy the snippet or open your config to bind them."
 
         Repeater {
             model: bindingModel
@@ -121,14 +121,34 @@ Column {
             }
 
             UiButton {
-                text: "Apply to compositor"
+                text: "Save shortcuts"
                 primary: true
                 onClicked: {
-                    if (backend.applyShortcutBindings(page.collect()))
-                        ConfigStore.status = "Shortcuts applied";
+                    if (backend.saveShortcutBindings(page.collect()))
+                        ConfigStore.status = "Shortcuts saved. Add the snippet below to your compositor config.";
                     else
                         ConfigStore.status = backend.errorString;
                     page.reload();
+                }
+            }
+
+            UiButton {
+                text: "Open config file"
+                onClicked: {
+                    if (backend.openPathInEditor(backend.shortcutConfigFilePath()))
+                        ConfigStore.status = "Opened " + backend.shortcutConfigFilePath();
+                    else
+                        ConfigStore.status = backend.errorString;
+                }
+            }
+
+            UiButton {
+                text: "Copy snippet"
+                onClicked: {
+                    if (backend.copyToClipboard(backend.shortcutConfigSnippet(page.collect())))
+                        ConfigStore.status = "Config snippet copied to the clipboard";
+                    else
+                        ConfigStore.status = backend.errorString;
                 }
             }
 

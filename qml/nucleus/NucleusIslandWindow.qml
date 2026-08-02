@@ -38,7 +38,12 @@ PanelWindow {
     readonly property real topMargin: Math.max(0, userConfig.islandTopMargin)
     // User scale factor (islandScale %) applied to the whole capsule so the
     // reference layouts keep their internal pixel metrics.
-    readonly property real uiScale: Math.max(0.6, Math.min(1.6, userConfig.islandScale / 100))
+    // Exact height (px) wins over the percentage scale when the user enables it,
+    // so the capsule can be sized by number without breaking the iOS metrics.
+    readonly property int exactHeight: Math.max(20, Math.min(96, userConfig.islandHeight))
+    readonly property real uiScale: userConfig.islandHeightOverrideEnabled
+        ? Math.max(0.5, Math.min(2.6, root.exactHeight / tokens.idleCompact.height))
+        : Math.max(0.6, Math.min(1.6, userConfig.islandScale / 100))
     readonly property real cornerRadius: Math.max(4, userConfig.islandCornerRadius)
     readonly property real restingHeight: tokens.idleCompact.height * root.uiScale
     readonly property real restingWidth: tokens.idleCompact.width * root.uiScale

@@ -52,6 +52,7 @@ class UserConfigBackend final : public QObject {
 
     Q_PROPERTY(int islandWidth READ islandWidth NOTIFY islandWidthChanged FINAL)
     Q_PROPERTY(int islandHeight READ islandHeight NOTIFY islandHeightChanged FINAL)
+    Q_PROPERTY(bool islandHeightOverrideEnabled READ islandHeightOverrideEnabled NOTIFY islandHeightOverrideEnabledChanged FINAL)
     Q_PROPERTY(int islandExclusiveZone READ islandExclusiveZone NOTIFY islandExclusiveZoneChanged FINAL)
     Q_PROPERTY(int islandTopMargin READ islandTopMargin NOTIFY islandTopMarginChanged FINAL)
     Q_PROPERTY(int islandScale READ islandScale NOTIFY islandScaleChanged FINAL)
@@ -127,6 +128,7 @@ public:
     int islandAutoHideDelayMs() const;
     int islandWidth() const;
     int islandHeight() const;
+    bool islandHeightOverrideEnabled() const;
     int islandExclusiveZone() const;
     int islandTopMargin() const;
     int islandScale() const;
@@ -204,6 +206,7 @@ signals:
     void islandAutoHideDelayMsChanged();
     void islandWidthChanged();
     void islandHeightChanged();
+    void islandHeightOverrideEnabledChanged();
     void islandExclusiveZoneChanged();
     void islandTopMarginChanged();
     void islandScaleChanged();
@@ -282,6 +285,7 @@ private:
     int m_islandWidth = 125;
     int m_islandBackgroundOpacity = 100;
     int m_islandHeight = 37;
+    bool m_islandHeightOverrideEnabled = false;
     int m_islandExclusiveZone = 45;
     int m_islandTopMargin = 11;
     int m_islandScale = 100;

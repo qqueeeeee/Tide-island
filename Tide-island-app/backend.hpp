@@ -42,6 +42,13 @@ public:
     Q_INVOKABLE bool niriShortcutBindingsNeedApply() const;
     Q_INVOKABLE bool ensureNiriShortcutBindings();
     Q_INVOKABLE bool applyShortcutBindings(const QVariantList &shortcutBindings);
+    Q_INVOKABLE bool saveShortcutBindings(const QVariantList &shortcutBindings);
+    Q_INVOKABLE QString shortcutConfigSnippet(const QVariantList &shortcutBindings) const;
+    Q_INVOKABLE QString shortcutConfigFilePath() const;
+    Q_INVOKABLE bool openPathInEditor(const QString &path);
+    Q_INVOKABLE QString wallpaperLibraryDirectory() const;
+    Q_INVOKABLE QVariantList wallpaperEntries() const;
+    Q_INVOKABLE bool applyWallpaper(const QString &path);
     Q_INVOKABLE QString applicationLauncherFavoritesPath() const;
     Q_INVOKABLE QVariantList applicationLauncherFavoriteEntries() const;
     Q_INVOKABLE bool saveApplicationLauncherFavorites(const QVariantList &favoriteIds);

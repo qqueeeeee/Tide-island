@@ -71,6 +71,7 @@ qt_add_qml_module(tide-island-config-app
         UiSwitch.qml
         UiSegment.qml
         UiTextField.qml
+        UiNumberField.qml
         UiButton.qml
         ShortcutField.qml
         IslandPreview.qml

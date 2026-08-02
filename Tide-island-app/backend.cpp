@@ -763,6 +763,200 @@ bool Backend::applyShortcutBindings(const QVariantList &shortcutBindings){
     return true;
 }
 
+bool Backend::saveShortcutBindings(const QVariantList &shortcutBindings){
+    const QVariantList updates = normalizedShortcutBindings(shortcutBindings);
+    if (updates.isEmpty()) {
+        setErrorString(QStringLiteral("Shortcut bindings are empty."));
+        return false;
+    }
+
+    QVariantList savedBindings = defaultShortcutBindings();
+    const auto savedIt = m_userConfig.find(QString::fromLatin1(shortcutBindingsKey));
+    if (savedIt != m_userConfig.end())
+        savedBindings = mergedShortcutBindings(savedBindings, savedIt->second.toList());
+
+    QVariantMap data = toVariantMap();
+    data.insert(QString::fromLatin1(shortcutBindingsKey), mergedShortcutBindings(savedBindings, updates));
+    return save(data);
+}
+
+QString Backend::shortcutConfigSnippet(const QVariantList &shortcutBindings) const{
+    const QVariantList source = shortcutBindings.isEmpty() ? this->shortcutBindings() : shortcutBindings;
+    const QVariantList bindings = filteredShortcutBindingsForCapabilities(
+        normalizedShortcutBindings(source),
+        supportsTideWorkspaceOverview());
+
+    if (currentCompositor() == QStringLiteral("niri"))
+        return niriConfigForBindings(bindings);
+
+    if (hyprlandUsesLuaConfig())
+        return hyprlandLuaShortcutBlock(bindings) + QStringLiteral("\n");
+
+    QStringList lines;
+    lines.append(QStringLiteral("# Tide Island shortcuts. Paste into your Hyprland config."));
+    for (const QVariant &value : bindings) {
+        const ShortcutBinding binding = bindingFromVariant(value);
+        if (binding.key.isEmpty())
+            continue;
+        lines.append(hyprlandConfBindLine(binding));
+    }
+    lines.append(QString());
+    return lines.join(u'\n');
+}
+
+QString Backend::shortcutConfigFilePath() const{
+    if (currentCompositor() == QStringLiteral("niri"))
+        return niriConfigPath();
+    if (hyprlandUsesLuaConfig())
+        return hyprlandLuaConfigPath();
+    return hyprlandConfigPath();
+}
+
+bool Backend::openPathInEditor(const QString &path){
+    const QString target = expandedPath(path).trimmed();
+    if (target.isEmpty() || !QFileInfo::exists(target)) {
+        setErrorString(QStringLiteral("File does not exist: %1").arg(target));
+        return false;
+    }
+
+    const QString editor = QString::fromLocal8Bit(qgetenv("VISUAL")).trimmed().isEmpty()
+        ? QString::fromLocal8Bit(qgetenv("EDITOR")).trimmed()
+        : QString::fromLocal8Bit(qgetenv("VISUAL")).trimmed();
+
+    QString script = QStringLiteral("xdg-open \"$1\" >/dev/null 2>&1");
+    if (!editor.isEmpty()) {
+        script = QStringLiteral("for term in kitty alacritty foot wezterm ghostty; do "
+                                "command -v \"$term\" >/dev/null 2>&1 && exec \"$term\" %1 \"$1\"; done; ")
+                     .arg(editor)
+                 + script;
+    }
+
+    const bool started = QProcess::startDetached(
+        QStringLiteral("sh"),
+        {QStringLiteral("-c"), script, QStringLiteral("tide-island-open"), target});
+    setErrorString(started ? QString() : QStringLiteral("Could not open %1").arg(target));
+    return started;
+}
+
+QString Backend::wallpaperLibraryDirectory() const{
+    const auto it = m_userConfig.find(QStringLiteral("wallpaperLibraryPath"));
+    const QString configured = it == m_userConfig.end() ? QString() : it->second.toString().trimmed();
+    if (!configured.isEmpty())
+        return expandedPath(configured);
+
+    return QDir::homePath() + QStringLiteral("/Pictures/Wallpapers");
+}
+
+QVariantList Backend::wallpaperEntries() const{
+    QVariantList entries;
+    QDir directory(wallpaperLibraryDirectory());
+    if (!directory.exists())
+        return entries;
+
+    const QStringList filters{
+        QStringLiteral("*.png"), QStringLiteral("*.jpg"), QStringLiteral("*.jpeg"),
+        QStringLiteral("*.webp"), QStringLiteral("*.bmp"), QStringLiteral("*.jxl"),
+        QStringLiteral("*.gif"), QStringLiteral("*.avif"),
+    };
+
+    const QFileInfoList files = directory.entryInfoList(filters, QDir::Files | QDir::Readable, QDir::Name);
+    for (const QFileInfo &info : files) {
+        entries.append(QVariantMap{
+            {QStringLiteral("name"), info.fileName()},
+            {QStringLiteral("path"), info.absoluteFilePath()},
+        });
+    }
+    return entries;
+}
+
+bool Backend::applyWallpaper(const QString &path){
+    const QString source = expandedPath(path).trimmed();
+    if (source.isEmpty() || !QFileInfo::exists(source)) {
+        setErrorString(QStringLiteral("Wallpaper does not exist: %1").arg(source));
+        return false;
+    }
+
+    const auto stringValue = [this](const char *key) {
+        const auto it = m_userConfig.find(QString::fromLatin1(key));
+        return it == m_userConfig.end() ? QString() : it->second.toString().trimmed();
+    };
+    const auto boolValue = [this](const char *key) {
+        const auto it = m_userConfig.find(QString::fromLatin1(key));
+        return it != m_userConfig.end() && it->second.toBool();
+    };
+    const auto intValue = [this](const char *key, int fallback) {
+        const auto it = m_userConfig.find(QString::fromLatin1(key));
+        if (it == m_userConfig.end())
+            return fallback;
+        bool ok = false;
+        const int parsed = it->second.toInt(&ok);
+        return ok ? parsed : fallback;
+    };
+
+    const QString customCommand = stringValue("wallpaperCustomCommand");
+    const bool useCustom = boolValue("wallpaperCustomCommandEnabled") && !customCommand.isEmpty();
+    const QString target = expandedPath(stringValue("wallpaperPath"));
+
+    QString applied = source;
+    if (!useCustom && !target.isEmpty()) {
+        const QFileInfo targetInfo(target);
+        if (!QDir().mkpath(targetInfo.absolutePath())) {
+            setErrorString(QStringLiteral("Could not create %1").arg(targetInfo.absolutePath()));
+            return false;
+        }
+        if (QFileInfo(source).canonicalFilePath() != targetInfo.canonicalFilePath()) {
+            QFile::remove(target);
+            if (!QFile::copy(source, target)) {
+                setErrorString(QStringLiteral("Could not copy the wallpaper to %1").arg(target));
+                return false;
+            }
+        }
+        applied = target;
+    }
+
+    QProcess process;
+    if (useCustom) {
+        process.start(QStringLiteral("bash"),
+            {QStringLiteral("-c"), customCommand, QStringLiteral("tide-island-wallpaper"), source, target});
+    } else {
+        const QString transition = stringValue("wallpaperTransitionType").isEmpty()
+            ? QStringLiteral("center")
+            : stringValue("wallpaperTransitionType");
+        process.start(QStringLiteral("awww"), {
+            QStringLiteral("img"), applied,
+            QStringLiteral("--transition-type"), transition,
+            QStringLiteral("--transition-duration"), QString::number(intValue("wallpaperTransitionDuration", 3)),
+            QStringLiteral("--transition-fps"), QString::number(intValue("wallpaperTransitionFps", 60)),
+        });
+    }
+
+    if (!process.waitForStarted(4000)) {
+        setErrorString(useCustom
+            ? QStringLiteral("Could not run the custom wallpaper command.")
+            : QStringLiteral("Could not run 'awww'. Install it, or use a custom command instead."));
+        return false;
+    }
+
+    if (!process.waitForFinished(20000) || process.exitCode() != 0) {
+        const QString details = QString::fromUtf8(process.readAllStandardError()).trimmed();
+        setErrorString(details.isEmpty()
+            ? QStringLiteral("The wallpaper command failed.")
+            : QStringLiteral("Wallpaper command failed: %1").arg(details));
+        return false;
+    }
+
+    if (!useCustom && boolValue("wallpaperPywalEnabled")) {
+        if (!QProcess::startDetached(QStringLiteral("wal"),
+                {QStringLiteral("-n"), QStringLiteral("-q"), QStringLiteral("-i"), source})) {
+            setErrorString(QStringLiteral("Wallpaper applied, but pywal ('wal') could not be started."));
+            return false;
+        }
+    }
+
+    setErrorString(QString());
+    return true;
+}
+
 QString Backend::applicationLauncherFavoritesPath() const{
     return configHome() + QStringLiteral("/tide-island/application-launcher.json");
 }
