@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import IslandBackend
@@ -62,6 +61,7 @@ PanelWindow {
     property var bannerItem: null
     property real volumeValue: 0
     property bool volumeMuted: false
+    property real brightnessValue: 0
 
     // --- Resolved activity --------------------------------------------------
     readonly property string activity: {
@@ -115,6 +115,7 @@ PanelWindow {
         case "banner":
             return tokens.notifyBanner;
         case "volume":
+        case "brightness":
             return tokens.volumeCompact;
         default:
             return tokens.idleCompact;
@@ -131,6 +132,7 @@ PanelWindow {
         case "banner":
             return 5000;
         case "volume":
+        case "brightness":
             return 2200;
         default:
             return 0;
@@ -152,10 +154,10 @@ PanelWindow {
 
     // Only the capsule takes input; the rest of the strip stays click-through.
     mask: Region {
-        x: Math.floor(capsule.x)
-        y: Math.floor(capsule.y)
-        width: Math.ceil(capsule.width)
-        height: Math.ceil(capsule.height)
+        x: Math.floor(capsuleHost.x + capsule.x) - 2
+        y: Math.floor(capsuleHost.y + capsule.y) - 2
+        width: Math.ceil(capsule.width) + 4
+        height: Math.ceil(capsule.height) + 4
     }
 
     IslandTokens { id: tokens }
@@ -222,6 +224,11 @@ PanelWindow {
         root.volumeValue = Math.max(0, Math.min(1, Number(value)));
         root.volumeMuted = !!muted;
         root.showTransient("volume");
+    }
+
+    function showBrightness(value) {
+        root.brightnessValue = Math.max(0, Math.min(1, Number(value)));
+        root.showTransient("brightness");
     }
 
     // --- Keyboard panels ---------------------------------------------------
@@ -323,13 +330,6 @@ PanelWindow {
             color: "#000000"
             clip: true
             scale: pointer.pressed ? motion.pressScale : 1
-            layer.enabled: true
-            layer.effect: MultiEffect {
-                shadowEnabled: true
-                shadowColor: "#bf000000"
-                shadowBlur: 0.85
-                shadowVerticalOffset: 14
-            }
 
             Behavior on width {
                 SpringAnimation {
@@ -614,10 +614,11 @@ PanelWindow {
 
             Loader {
                 anchors.fill: parent
-                active: root.activity === "volume"
+                active: root.activity === "volume" || root.activity === "brightness"
                 sourceComponent: VolumeHudLayer {
-                    value: root.volumeValue
-                    muted: root.volumeMuted
+                    kind: root.activity === "brightness" ? "brightness" : "volume"
+                    value: root.activity === "brightness" ? root.brightnessValue : root.volumeValue
+                    muted: root.activity !== "brightness" && root.volumeMuted
                     textFontFamily: root.textFontFamily
                     iconFontFamily: root.iconFontFamily
                 }
