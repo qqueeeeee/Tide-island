@@ -14,8 +14,11 @@ Item {
 
     readonly property var userConfig: UserConfig
 
-    // "breathing" | "glance" | "clock"
-    property string idleContent: "breathing"
+    // "orb" | "breathing" | "glance" | "clock"
+    property string idleContent: "orb"
+    // 0..1 system load, -1 when unknown. Only used by the "orb" mode.
+    property real cpuUsage: -1
+    property real ramUsage: -1
     property string currentTime: ""
     property string textFontFamily: ""
     property bool showCondition: true
@@ -29,6 +32,19 @@ Item {
     IslandContentReveal {
         target: root
         active: root.showCondition
+    }
+
+    // Orb mode: the living circle plus its CPU/RAM satellites. Owns its own
+    // reveal, so it is mounted lazily and left alone by this layer's opacity.
+    Loader {
+        anchors.fill: parent
+        active: root.idleContent === "orb"
+        visible: active
+        sourceComponent: IslandOrbLayer {
+            cpuUsage: root.cpuUsage
+            ramUsage: root.ramUsage
+            showCondition: root.showCondition
+        }
     }
 
     // Glance mode: a single unobtrusive dot. Clicking the capsule expands into

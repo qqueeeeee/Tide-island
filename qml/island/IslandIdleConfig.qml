@@ -10,7 +10,8 @@ import IslandBackend
 // Swap `idleContent` to change what the resting capsule holds without touching
 // any layout code:
 //
-//   "breathing" — empty pill, very slow scale/opacity breath (default, authentic)
+//   "orb"       — living orb on the left with CPU/RAM satellite rings (default)
+//   "breathing" — empty pill, very slow scale/opacity breath
 //   "glance"    — a single tiny dot; click expands into the system glance
 //   "clock"     — minimal low-opacity time, no seconds, no visual weight
 //
@@ -26,7 +27,7 @@ Item {
     height: 0
 
     // Change this line (or set userConfig.islandIdleContent) to swap idle style.
-    property string preferredIdleContent: "breathing"
+    property string preferredIdleContent: "orb"
 
     readonly property string configuredIdleContent: {
         const fromBackend = root.userConfig && root.userConfig.islandIdleContent !== undefined
@@ -37,16 +38,18 @@ Item {
 
     readonly property string idleContent: {
         switch (root.configuredIdleContent) {
+        case "orb":
         case "glance":
         case "clock":
         case "breathing":
             return root.configuredIdleContent;
         default:
-            return "breathing";
+            return "orb";
         }
     }
 
     readonly property bool idleBreathes: idleContent === "breathing"
     readonly property bool idleShowsGlanceDot: idleContent === "glance"
     readonly property bool idleShowsClockText: idleContent === "clock"
+    readonly property bool idleShowsOrb: idleContent === "orb"
 }

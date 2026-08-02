@@ -257,8 +257,13 @@ Item {
                 enabled: opacity > 0.001
 
                 Column {
+                    // Wider side padding than vertical: the capsule keeps a
+                    // pill silhouette at this size, so its corners cut in.
                     anchors.fill: parent
-                    anchors.margins: 20
+                    anchors.topMargin: 18
+                    anchors.bottomMargin: 18
+                    anchors.leftMargin: 34
+                    anchors.rightMargin: 34
                     spacing: 14
 
                     Item {

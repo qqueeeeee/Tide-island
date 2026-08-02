@@ -40,7 +40,10 @@ Item {
 
     Item {
         anchors.fill: parent
-        anchors.margins: 22
+        anchors.topMargin: 18
+        anchors.bottomMargin: 18
+        anchors.leftMargin: 34
+        anchors.rightMargin: 34
 
         Rectangle {
             id: thumbnailFrame

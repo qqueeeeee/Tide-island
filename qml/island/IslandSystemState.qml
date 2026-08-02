@@ -12,6 +12,9 @@ Item {
     signal transientRequested(string icon, real progress, string text)
 
     property var configuredLeftSwipeItems: []
+    // Set by consumers that need CPU/RAM regardless of the swipe config (the
+    // idle orb's satellite rings). Reuses the same poll + SystemServices path.
+    property bool systemStatsRequired: false
     property string timeText: "00:00"
     property string dateText: "Mon, Jan 01"
     property int currentWorkspace: 1
@@ -19,7 +22,8 @@ Item {
     property bool lyricsCavaActive: false
 
     readonly property var configuredLeftSwipeIds: buildNormalizedSwipeItemIds(configuredLeftSwipeItems)
-    readonly property bool usesSystemStatsModule: configuredLeftSwipeIds.indexOf("cpu") !== -1
+    readonly property bool usesSystemStatsModule: root.systemStatsRequired
+        || configuredLeftSwipeIds.indexOf("cpu") !== -1
         || configuredLeftSwipeIds.indexOf("ram") !== -1
     readonly property bool usesStorageModule: configuredLeftSwipeIds.indexOf("storage") !== -1
     readonly property bool usesCavaModule: configuredLeftSwipeIds.indexOf("cava") !== -1
@@ -64,6 +68,7 @@ Item {
         updateCavaSubscription();
     }
     onUsesSystemStatsModuleChanged: refreshMissingValues()
+    onSystemStatsRequiredChanged: refreshMissingValues()
     onUsesStorageModuleChanged: refreshMissingValues()
     onUsesCavaModuleChanged: updateCavaSubscription()
     onCustomSwipeActiveChanged: updateCavaSubscription()
@@ -328,7 +333,7 @@ Item {
     Timer {
         id: systemStatsPollTimer
 
-        interval: 3000
+        interval: root.systemStatsRequired ? 2000 : 3000
         repeat: true
         running: root.usesSystemStatsModule
         triggeredOnStart: true

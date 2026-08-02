@@ -199,6 +199,10 @@ PanelWindow {
     // welded to the top edge of the screen, top corners are square so it reads as
     // part of the display bezel, and only the bottom corners are rounded.
     readonly property bool macNotchStyle: userConfig.islandMacNotchStyle
+    // The island is a true mobile-style capsule at every size now: the notch
+    // chrome (square top corners, bezel shoulders, welded top edge) is retired,
+    // while `macNotchStyle` keeps driving the wider macOS-ish size metrics.
+    readonly property bool notchChromeVisible: false
     readonly property real macNotchRestingWidth: 208
     readonly property real macNotchRestingHeight: 34
     readonly property real macNotchShoulder: 11
@@ -208,7 +212,11 @@ PanelWindow {
     readonly property real islandRestingHeight: root.macNotchStyle
         ? root.macNotchRestingHeight
         : userConfig.islandHeight
-    readonly property real islandTopOffset: root.macNotchStyle ? 0 : userConfig.islandTopMargin
+    // Even in notch-metrics mode the pill floats: a welded top edge cannot be a
+    // capsule.
+    readonly property real islandTopOffset: root.macNotchStyle
+        ? Math.max(6, userConfig.islandTopMargin)
+        : userConfig.islandTopMargin
 
     // --- Morph metrics ---
     // iOS reference: iPhone 15/16 Pro idle pill 125x37pt, compact ~200pt,
@@ -226,27 +234,17 @@ PanelWindow {
     readonly property real iosExpandedHeight: root.macNotchStyle
         ? 190
         : root.islandRestingHeight * (160.0 / 37.0)
-    readonly property real iosExpandedRadius: root.macNotchStyle ? 22 : 44.0 * iosScale
-    // Corner radius of the fully grown "card". Apple keeps this in the 28-36pt
-    // band; the notch shell sits a little tighter because its top edge is flat.
-    readonly property real iosLargeCornerRadius: root.macNotchStyle
-        ? 30
-        : Math.max(28, Math.min(36, 34.0 * iosScale))
     readonly property real iosNotificationHeight: root.macNotchStyle
         ? 62
         : root.islandRestingHeight * (56.0 / 37.0)
     readonly property var iosMorphCurve: [0.32, 0.72, 0.0, 1.0, 1.0, 1.0]
 
-    // Pill -> card radius, derived purely from height so the shape can never
-    // disagree with its corners mid-morph. Never exceeds height / 2, so short
-    // but wide states (recording, compact notification) stay true pills.
+    // One rule for every size: radius is always half the height, so the shape is
+    // a perfect capsule whether it is the resting pill, a compact activity or a
+    // fully expanded card-sized pill. Derived from the live height, so corners
+    // can never fall out of sync with the springing shape.
     function capsuleRadiusForHeight(shapeHeight) {
-        const pill = shapeHeight / 2;
-        const restingPill = root.islandRestingHeight / 2;
-        const span = Math.max(1, root.iosExpandedHeight - root.islandRestingHeight);
-        const t = Math.max(0, Math.min(1, (shapeHeight - root.islandRestingHeight) / span));
-        const eased = t * t * (3 - 2 * t);
-        return Math.min(pill, restingPill + (root.iosLargeCornerRadius - restingPill) * eased);
+        return Math.max(0, shapeHeight / 2);
     }
 
 
@@ -1170,6 +1168,7 @@ PanelWindow {
             id: systemState
 
             configuredLeftSwipeItems: userConfig.dynamicIslandLeftSwipeItems
+            systemStatsRequired: idleConfig.idleShowsOrb
             timeText: timeObj.currentTime
             dateText: timeObj.currentDateLabel
             currentWorkspace: islandContainer.currentWs
@@ -2189,8 +2188,8 @@ PanelWindow {
 
             z: 5
             sourceComponent: notchShoulderComponent
-            active: root.macNotchStyle
-            visible: root.macNotchStyle && mainCapsule.opacity > 0.01
+            active: root.notchChromeVisible
+            visible: root.notchChromeVisible && mainCapsule.opacity > 0.01
             opacity: mainCapsule.opacity
             width: root.macNotchShoulder
             height: root.macNotchShoulder
@@ -2207,8 +2206,8 @@ PanelWindow {
 
             z: 5
             sourceComponent: notchShoulderComponent
-            active: root.macNotchStyle
-            visible: root.macNotchStyle && mainCapsule.opacity > 0.01
+            active: root.notchChromeVisible
+            visible: root.notchChromeVisible && mainCapsule.opacity > 0.01
             opacity: mainCapsule.opacity
             width: root.macNotchShoulder
             height: root.macNotchShoulder
@@ -2235,7 +2234,7 @@ PanelWindow {
         // over the desktop. Skipped in notch mode, where the shape is welded to
         // the top bezel and a shadow would look like a rendering artefact.
         Repeater {
-            model: root.macNotchStyle ? 0 : 3
+            model: 3
 
             Rectangle {
                 required property int index
@@ -2461,7 +2460,7 @@ PanelWindow {
             // macOS notch: square off the two top corners so the capsule is
             // welded to the top bezel instead of floating like the iOS pill.
             Rectangle {
-                visible: root.macNotchStyle && mainCapsule.radius > 0
+                visible: root.notchChromeVisible && mainCapsule.radius > 0
                 color: mainCapsule.color
                 width: mainCapsule.radius
                 height: mainCapsule.radius
@@ -2470,7 +2469,7 @@ PanelWindow {
                 z: 0
             }
             Rectangle {
-                visible: root.macNotchStyle && mainCapsule.radius > 0
+                visible: root.notchChromeVisible && mainCapsule.radius > 0
                 color: mainCapsule.color
                 width: mainCapsule.radius
                 height: mainCapsule.radius
@@ -3006,6 +3005,8 @@ PanelWindow {
                 asynchronous: false
                 sourceComponent: IslandIdleLayer {
                     idleContent: islandContainer.idleContent
+                    cpuUsage: islandContainer.currentCpuUsage
+                    ramUsage: islandContainer.currentRamUsage
                     currentTime: timeObj.currentTime
                     textFontFamily: root.textFontFamily
                     showCondition: islandContainer.idleLayerVisible

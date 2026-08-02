@@ -27,7 +27,12 @@ PanelWindow {
     readonly property bool macNotchStyle: userConfig.islandMacNotchStyle
     readonly property real islandRestingWidth: root.macNotchStyle ? 208 : userConfig.islandWidth
     readonly property real islandRestingHeight: root.macNotchStyle ? 34 : userConfig.islandHeight
-    readonly property real islandTopOffset: root.macNotchStyle ? 0 : userConfig.islandTopMargin
+    // Mirrors DynamicIslandWindow: the island is a floating capsule now, so even
+    // in notch-metrics mode it sits a few px below the screen edge and the bar
+    // baseline follows it.
+    readonly property real islandTopOffset: root.macNotchStyle
+        ? Math.max(6, userConfig.islandTopMargin)
+        : userConfig.islandTopMargin
 
     // Where the resting island sits. Bar content is laid out around this fixed
     // rectangle and never around the live capsule.
