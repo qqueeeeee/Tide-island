@@ -26,8 +26,14 @@ PanelWindow {
     property var clipboard: null
     property var notifications: null
     property var workspaces: null
+    property var wallpapers: null
 
     readonly property var userConfig: UserConfig
+
+    // Wallpaper picker metrics (kept here so IslandTokens stays the ported
+    // reference table).
+    readonly property size wallpaperCompactSize: Qt.size(262, 38)
+    readonly property size wallpaperExpandedSize: Qt.size(460, 300)
 
     // --- Fonts --------------------------------------------------------------
     readonly property string textFontFamily: userConfig.textFontFamily
@@ -57,7 +63,7 @@ PanelWindow {
     // --- Transient state ----------------------------------------------------
     // "" | "notification" | "shot" | "volume"
     property string transientActivity: ""
-    // "" | "launcher" | "clipboard" | "notify" | "workspaces" — keyboard-driven
+    // "" | "launcher" | "clipboard" | "notify" | "workspaces" | "wallpaper" — keyboard-driven
     // panels; only one can be open and they always open expanded.
     property string panelActivity: ""
     property bool controlCentreOpen: false
@@ -93,6 +99,7 @@ PanelWindow {
         || root.activity === "clipboard"
         || root.activity === "notify"
         || root.activity === "workspaces"
+        || root.activity === "wallpaper"
         || root.activity === "media"
         || root.activity === "recording"
         || root.activity === "control"
@@ -121,6 +128,8 @@ PanelWindow {
             return root.expanded ? tokens.notifyExpanded : tokens.notifyCompact;
         case "workspaces":
             return root.expanded ? tokens.workspacesExpanded : tokens.workspacesCompact;
+        case "wallpaper":
+            return root.expanded ? root.wallpaperExpandedSize : root.wallpaperCompactSize;
         case "banner":
             return tokens.notifyBanner;
         case "volume":
@@ -282,10 +291,23 @@ PanelWindow {
         root.panelActivity = "";
     }
 
+    // A panel Loader becomes active while its layer is created already visible,
+    // so the layer's own showCondition handler never fires and its search field
+    // stays unfocused until clicked. Re-arming showCondition runs that handler
+    // (which grabs the keyboard) and replays the content reveal.
+    function armPanel(item) {
+        if (!item)
+            return;
+        item.showCondition = false;
+        item.showCondition = true;
+        item.forceActiveFocus();
+    }
+
     function toggleLauncher() { root.openPanel("launcher"); }
     function toggleClipboard() { root.openPanel("clipboard"); }
     function toggleNotifications() { root.openPanel("notify"); }
     function toggleWorkspaces() { root.openPanel("workspaces"); }
+    function toggleWallpaperPicker() { root.openPanel("wallpaper"); }
 
     function toggleControlCentre() {
         root.clearTransient();
@@ -588,6 +610,8 @@ PanelWindow {
             Loader {
                 anchors.fill: parent
                 active: root.activity === "launcher" && root.expanded
+                focus: true
+                onLoaded: root.armPanel(item)
                 sourceComponent: LauncherExpandedLayer {
                     textFontFamily: root.textFontFamily
                     iconFontFamily: root.iconFontFamily
@@ -608,6 +632,8 @@ PanelWindow {
             Loader {
                 anchors.fill: parent
                 active: root.activity === "clipboard" && root.expanded
+                focus: true
+                onLoaded: root.armPanel(item)
                 sourceComponent: ClipboardExpandedLayer {
                     source: root.clipboard
                     textFontFamily: root.textFontFamily
@@ -630,6 +656,8 @@ PanelWindow {
             Loader {
                 anchors.fill: parent
                 active: root.activity === "notify" && root.expanded
+                focus: true
+                onLoaded: root.armPanel(item)
                 sourceComponent: NotifyExpandedLayer {
                     source: root.notifications
                     textFontFamily: root.textFontFamily
@@ -651,8 +679,33 @@ PanelWindow {
             Loader {
                 anchors.fill: parent
                 active: root.activity === "workspaces" && root.expanded
+                focus: true
+                onLoaded: root.armPanel(item)
                 sourceComponent: WorkspacesExpandedLayer {
                     source: root.workspaces
+                    textFontFamily: root.textFontFamily
+                    iconFontFamily: root.iconFontFamily
+                    onCloseRequested: root.closePanel()
+                }
+            }
+
+            Loader {
+                anchors.fill: parent
+                active: root.activity === "wallpaper" && !root.expanded
+                sourceComponent: WallpaperCompactLayer {
+                    source: root.wallpapers
+                    textFontFamily: root.textFontFamily
+                    iconFontFamily: root.iconFontFamily
+                }
+            }
+
+            Loader {
+                anchors.fill: parent
+                active: root.activity === "wallpaper" && root.expanded
+                focus: true
+                onLoaded: root.armPanel(item)
+                sourceComponent: WallpaperExpandedLayer {
+                    source: root.wallpapers
                     textFontFamily: root.textFontFamily
                     iconFontFamily: root.iconFontFamily
                     onCloseRequested: root.closePanel()

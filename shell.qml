@@ -168,10 +168,9 @@ Scope {
             shellRoot.once("clipboard", (island) => island.toggleClipboard());
         }
 
-        // Wallpapers live in the settings app's Wallpaper page.
+        // SUPER + W: the island's own wallpaper picker panel.
         function toggleWallpaperPicker() {
-            if (shellRoot.accept("wallpaper"))
-                shellRoot.launchSettings("wallpaper");
+            shellRoot.once("wallpaper", (island) => island.toggleWallpaperPicker());
         }
     }
 
@@ -197,8 +196,7 @@ Scope {
         }
 
         function wallpaper() {
-            if (shellRoot.accept("wallpaper"))
-                shellRoot.launchSettings("wallpaper");
+            shellRoot.once("wallpaper", (island) => island.toggleWallpaperPicker());
         }
     }
 
@@ -262,6 +260,13 @@ Scope {
     Nucleus.ClipboardSource { id: clipboardSource }
     Nucleus.WorkspaceSource { id: workspaceSource }
     Nucleus.NotifySource { id: notifySource }
+    Nucleus.WallpaperSource {
+        id: wallpaperSource
+
+        onFailed: (message) => {
+            shellRoot.forEachIsland((island) => island.showNotification("Wallpaper", "Could not apply wallpaper", message));
+        }
+    }
 
     Variants {
         id: islandVariants
@@ -277,6 +282,7 @@ Scope {
             clipboard: clipboardSource
             notifications: notifySource
             workspaces: workspaceSource
+            wallpapers: wallpaperSource
         }
     }
 
