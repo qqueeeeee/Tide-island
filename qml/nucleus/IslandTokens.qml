@@ -52,6 +52,7 @@ Item {
     readonly property size controlCompact: Qt.size(246, 38)
     readonly property size controlExpanded: Qt.size(372, 178)
     readonly property size volumeCompact: Qt.size(272, 42)
+    readonly property size clockCompact: Qt.size(232, 38)
     readonly property size shotCompact: Qt.size(246, 37)
     readonly property size shotExpanded: Qt.size(348, 106)
     readonly property size deviceExpanded: Qt.size(318, 86)

@@ -113,9 +113,20 @@ QtObject {
         store.writeTimer.restart();
     }
 
+    // Re-reads the config from disk. Needed after anything outside the pages
+    // writes it (shortcut saves, wallpaper apply) so the next flush does not
+    // clobber those keys with a stale snapshot.
+    function refresh() {
+        store.map = backend.currentUserConfig();
+        store.revision++;
+    }
+
     function flush() {
-        if (backend.save(store.map)) {
+        // Patch-merge: only the keys the pages actually touched are written, so
+        // keys this snapshot never contained (shortcutBindings) survive.
+        if (backend.saveUserConfigPatch(store.map)) {
             store.status = "Saved to " + store.path;
+            store.map = backend.currentUserConfig();
         } else {
             store.status = backend.errorString;
         }

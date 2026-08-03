@@ -30,6 +30,21 @@ ApplicationWindow {
 
     property int currentPage: 0
 
+    // `tide-island-config-app --page wallpaper` (used by the island's wallpaper
+    // shortcut) lands directly on that page.
+    Component.onCompleted: {
+        const requested = String(typeof startupPage === "undefined" ? "" : startupPage).trim().toLowerCase();
+        if (requested === "")
+            return;
+        for (let index = 0; index < window.pages.length; index++) {
+            if (window.pages[index].title.toLowerCase() === requested
+                || window.pages[index].source.toLowerCase() === "page" + requested + ".qml") {
+                window.currentPage = index;
+                return;
+            }
+        }
+    }
+
     // ---- Sidebar -----------------------------------------------------------
     Rectangle {
         id: sidebar

@@ -126,6 +126,8 @@ PanelWindow {
         case "volume":
         case "brightness":
             return tokens.volumeCompact;
+        case "clock":
+            return tokens.clockCompact;
         default:
             return tokens.idleCompact;
         }
@@ -143,6 +145,8 @@ PanelWindow {
         case "volume":
         case "brightness":
             return 2200;
+        case "clock":
+            return 2600;
         default:
             return 0;
         }
@@ -239,6 +243,27 @@ PanelWindow {
         root.volumeValue = Math.max(0, Math.min(1, Number(value)));
         root.volumeMuted = !!muted;
         root.showTransient("volume");
+    }
+
+    // `tide showClock`: momentary time + date peek, then back to whatever the
+    // island was showing before.
+    function showClockPeek() {
+        root.closePanel();
+        root.controlCentreOpen = false;
+        root.showTransient("clock");
+    }
+
+    // `tide togglePlayer`: expands Now Playing when media is live, instead of
+    // falling through to the Control Centre.
+    function togglePlayer() {
+        root.closePanel();
+        root.controlCentreOpen = false;
+        if (!root.mediaLive) {
+            root.showNotification("Media", "Nothing playing", "Start a player and the island picks it up.");
+            return;
+        }
+        root.clearTransient();
+        root.expanded = !root.expanded;
     }
 
     function showBrightness(value) {
@@ -506,6 +531,16 @@ PanelWindow {
                         root.clearTransient();
                     }
                     onDismissRequested: root.clearTransient()
+                }
+            }
+
+            Loader {
+                anchors.fill: parent
+                active: root.activity === "clock"
+                sourceComponent: ClockPeekLayer {
+                    lifeProgress: root.life
+                    textFontFamily: root.textFontFamily
+                    heroFontFamily: root.heroFontFamily
                 }
             }
 

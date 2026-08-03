@@ -24,13 +24,43 @@ Scope {
     Process {
         id: settingsApp
 
-        command: ["sh", "-c", "pgrep -x tide-island-config-app >/dev/null 2>&1 && exit 0; tide-island-config-app >/dev/null 2>&1 || /usr/bin/tide-island-config-app >/dev/null 2>&1"]
+        command: ["sh", "-c", "true"]
     }
 
-    function launchSettings() {
+    // page: "" | "island" | "wallpaper" | "shortcuts" | ...
+    function launchSettings(page) {
+        const requested = page === undefined || page === null ? "" : String(page).trim();
+        const arg = requested === "" ? "" : " --page " + requested;
+        const script = "pgrep -x tide-island-config-app >/dev/null 2>&1 && exit 0; "
+            + "tide-island-config-app" + arg + " >/dev/null 2>&1 "
+            + "|| /usr/bin/tide-island-config-app" + arg + " >/dev/null 2>&1";
         if (settingsApp.running)
             settingsApp.running = false;
+        settingsApp.command = ["sh", "-c", script];
         settingsApp.running = true;
+    }
+
+    // --- Duplicate-bind guard ----------------------------------------------
+    // Users very often bind these commands in their own compositor config while
+    // an older Tide Island managed bind is still installed, so one key press
+    // arrives twice and a toggle cancels itself out (the launcher flashing open
+    // then shut). Collapsing repeats of the same command inside one press
+    // window makes double binds harmless.
+    property var lastCallStamps: ({})
+
+    function accept(key) {
+        const now = Date.now();
+        const previous = shellRoot.lastCallStamps[key] || 0;
+        if (now - previous < 280)
+            return false;
+        shellRoot.lastCallStamps[key] = now;
+        return true;
+    }
+
+    function once(key, callback) {
+        if (!shellRoot.accept(key))
+            return;
+        shellRoot.forEachIsland(callback);
     }
 
 
@@ -54,7 +84,7 @@ Scope {
         target: "island"
 
         function controlCenter() {
-            shellRoot.forEachIsland((island) => island.toggleControlCentre());
+            shellRoot.once("controlCenter", (island) => island.toggleControlCentre());
         }
 
         function openControlCenter() {
@@ -75,19 +105,19 @@ Scope {
         }
 
         function launcher() {
-            shellRoot.forEachIsland((island) => island.toggleLauncher());
+            shellRoot.once("launcher", (island) => island.toggleLauncher());
         }
 
         function clipboard() {
-            shellRoot.forEachIsland((island) => island.toggleClipboard());
+            shellRoot.once("clipboard", (island) => island.toggleClipboard());
         }
 
         function notifications() {
-            shellRoot.forEachIsland((island) => island.toggleNotifications());
+            shellRoot.once("notifications", (island) => island.toggleNotifications());
         }
 
         function workspaces() {
-            shellRoot.forEachIsland((island) => island.toggleWorkspaces());
+            shellRoot.once("workspaces", (island) => island.toggleWorkspaces());
         }
 
         function close() {
@@ -97,7 +127,7 @@ Scope {
         // Legacy SUPER+F binding: reveal the Control Centre, or dismiss
         // whatever panel is currently open.
         function toggle() {
-            shellRoot.forEachIsland((island) => island.toggleControlCentre());
+            shellRoot.once("controlCenter", (island) => island.toggleControlCentre());
         }
     }
 
@@ -108,35 +138,40 @@ Scope {
         target: "tide"
 
         function toggleControlCenter() {
-            shellRoot.forEachIsland((island) => island.toggleControlCentre());
+            shellRoot.once("controlCenter", (island) => island.toggleControlCentre());
         }
 
         function toggleNotificationCenter() {
-            shellRoot.forEachIsland((island) => island.toggleNotifications());
+            shellRoot.once("notifications", (island) => island.toggleNotifications());
         }
 
         function toggleApplicationLauncher() {
-            shellRoot.forEachIsland((island) => island.toggleLauncher());
+            shellRoot.once("launcher", (island) => island.toggleLauncher());
         }
 
+        // Media, not the Control Centre: expands the Now Playing card when
+        // something is playing, and says so when nothing is.
         function togglePlayer() {
-            shellRoot.forEachIsland((island) => island.toggleControlCentre());
+            shellRoot.once("player", (island) => island.togglePlayer());
         }
 
+        // The iOS clock peek: time and date on the capsule for a moment.
         function showClock() {
-            shellRoot.forEachIsland((island) => island.closePanel());
+            shellRoot.once("clock", (island) => island.showClockPeek());
         }
 
         function swipeRight() {
-            shellRoot.forEachIsland((island) => island.toggleWorkspaces());
+            shellRoot.once("workspaces", (island) => island.toggleWorkspaces());
         }
 
         function swipeLeft() {
-            shellRoot.forEachIsland((island) => island.toggleClipboard());
+            shellRoot.once("clipboard", (island) => island.toggleClipboard());
         }
 
+        // Wallpapers live in the settings app's Wallpaper page.
         function toggleWallpaperPicker() {
-            shellRoot.forEachIsland((island) => island.toggleWorkspaces());
+            if (shellRoot.accept("wallpaper"))
+                shellRoot.launchSettings("wallpaper");
         }
     }
 
@@ -144,7 +179,7 @@ Scope {
         target: "overview"
 
         function toggle() {
-            shellRoot.forEachIsland((island) => island.toggleWorkspaces());
+            shellRoot.once("workspaces", (island) => island.toggleWorkspaces());
         }
     }
 
@@ -152,11 +187,18 @@ Scope {
         target: "settings"
 
         function open() {
-            shellRoot.launchSettings();
+            if (shellRoot.accept("settings"))
+                shellRoot.launchSettings("");
         }
 
         function toggle() {
-            shellRoot.launchSettings();
+            if (shellRoot.accept("settings"))
+                shellRoot.launchSettings("");
+        }
+
+        function wallpaper() {
+            if (shellRoot.accept("wallpaper"))
+                shellRoot.launchSettings("wallpaper");
         }
     }
 
@@ -169,7 +211,8 @@ Scope {
         }
 
         function screenshotArea() {
-            captureBackend.takeScreenshot("area");
+            if (shellRoot.accept("screenshotArea"))
+                captureBackend.takeScreenshot("area");
         }
 
         function screenshotScreen() {
@@ -189,7 +232,8 @@ Scope {
         }
 
         function toggleRecording() {
-            captureBackend.toggleRecording(false);
+            if (shellRoot.accept("toggleRecording"))
+                captureBackend.toggleRecording(false);
         }
 
         function toggleRecordingArea() {

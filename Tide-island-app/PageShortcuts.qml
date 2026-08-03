@@ -6,7 +6,10 @@ Column {
 
     spacing: 14
 
+    property bool managedInstalled: false
+
     function reload() {
+        page.managedInstalled = backend.managedShortcutsInstalled();
         bindingModel.clear();
         const bindings = backend.shortcutBindings();
         for (let index = 0; index < bindings.length; index++) {
@@ -124,10 +127,14 @@ Column {
                 text: "Save shortcuts"
                 primary: true
                 onClicked: {
-                    if (backend.saveShortcutBindings(page.collect()))
+                    if (backend.saveShortcutBindings(page.collect())) {
                         ConfigStore.status = "Shortcuts saved. Add the snippet below to your compositor config.";
-                    else
+                        // Keep the shared snapshot in sync, otherwise the next
+                        // slider change would write the old binds back.
+                        ConfigStore.refresh();
+                    } else {
                         ConfigStore.status = backend.errorString;
+                    }
                     page.reload();
                 }
             }
@@ -155,6 +162,29 @@ Column {
             UiButton {
                 text: "Reload"
                 onClicked: page.reload()
+            }
+        }
+    }
+
+    UiCard {
+        width: parent.width
+        title: "Compositor binds"
+        caption: backend.managedShortcutsSummary()
+
+        Row {
+            spacing: 10
+
+            UiButton {
+                text: page.managedInstalled ? "Remove managed binds" : "No managed binds installed"
+                destructive: page.managedInstalled
+                enabled: page.managedInstalled
+                onClicked: {
+                    if (backend.removeManagedShortcuts())
+                        ConfigStore.status = "Removed the binds Tide Island had installed. Your own config now owns them.";
+                    else
+                        ConfigStore.status = backend.errorString;
+                    page.reload();
+                }
             }
         }
     }

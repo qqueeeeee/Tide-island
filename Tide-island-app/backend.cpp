@@ -589,6 +589,162 @@ bool Backend::save(const QVariantMap &userConfig){
     return true;
 }
 
+QVariantMap Backend::currentUserConfig() const{
+    Backend *self = const_cast<Backend *>(this);
+    self->load();
+    return toVariantMap();
+}
+
+bool Backend::saveUserConfigPatch(const QVariantMap &patch){
+    load();
+    QVariantMap data = toVariantMap();
+    for (auto it = patch.constBegin(); it != patch.constEnd(); ++it)
+        data.insert(it.key(), it.value());
+    return save(data);
+}
+
+bool Backend::managedShortcutsInstalled() const{
+    if (QFileInfo::exists(managedShortcutConfigPath()))
+        return true;
+
+    QFile hyprConfig(hyprlandConfigPath());
+    if (hyprConfig.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        const QString text = QString::fromUtf8(hyprConfig.readAll());
+        if (text.contains(managedShortcutConfigPath())
+            || text.contains(QString::fromLatin1(tideShortcutPrefix))
+            || text.contains(QString::fromLatin1(legacyTideShortcutPrefix))) {
+            return true;
+        }
+    }
+
+    QFile luaConfig(hyprlandLuaConfigPath());
+    if (luaConfig.open(QIODevice::ReadOnly | QIODevice::Text)
+        && QString::fromUtf8(luaConfig.readAll()).contains(
+            QStringLiteral("-- Tide Island shortcuts: begin"))) {
+        return true;
+    }
+
+    if (QFileInfo::exists(managedNiriShortcutConfigPath()))
+        return true;
+
+    return false;
+}
+
+QString Backend::managedShortcutsSummary() const{
+    return managedShortcutsInstalled()
+        ? QStringLiteral("Tide Island is installing these binds into your compositor config. "
+                         "If you already bind them yourself they fire twice — remove the managed binds.")
+        : QStringLiteral("Tide Island is not touching your compositor config. Bind these commands yourself "
+                         "(copy the snippet) so each shortcut fires exactly once.");
+}
+
+bool Backend::removeManagedShortcuts(){
+    bool changed = false;
+
+    // 1. The generated hyprland .conf plus its `source =` line.
+    const QString managedConf = managedShortcutConfigPath();
+    if (QFileInfo::exists(managedConf)) {
+        if (!QFile::remove(managedConf)) {
+            setErrorString(QStringLiteral("Could not remove %1").arg(managedConf));
+            return false;
+        }
+        changed = true;
+    }
+
+    QFile hyprInput(hyprlandConfigPath());
+    if (hyprInput.exists()) {
+        if (!hyprInput.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            setErrorString(QStringLiteral("Could not read %1: %2")
+                .arg(hyprlandConfigPath(), hyprInput.errorString()));
+            return false;
+        }
+        const QString existing = QString::fromUtf8(hyprInput.readAll());
+        hyprInput.close();
+
+        QStringList kept;
+        for (const QString &line : existing.split(u'\n')) {
+            const QString trimmed = line.trimmed();
+            if (trimmed.contains(managedConf)
+                || trimmed.contains(QString::fromLatin1(tideShortcutPrefix))
+                || trimmed.contains(QString::fromLatin1(legacyTideShortcutPrefix))
+                || trimmed == QStringLiteral("# Tide Island shortcuts")
+                || trimmed == QStringLiteral("# Tide Island shortcut bindings")
+                || trimmed == QStringLiteral("# Generated binds are stored in ~/.config/tide-island/hyprland-shortcuts.conf.")
+                || trimmed == QStringLiteral("# They call Quickshell IPC and can also be reused from your own scripts.")) {
+                continue;
+            }
+            kept.append(line);
+        }
+
+        QString output = kept.join(u'\n');
+        if (!output.endsWith(u'\n'))
+            output.append(u'\n');
+        if (output != existing) {
+            QSaveFile file(hyprlandConfigPath());
+            if (!file.open(QIODevice::WriteOnly | QIODevice::Text) || (file.write(output.toUtf8()), !file.commit())) {
+                setErrorString(QStringLiteral("Could not rewrite %1").arg(hyprlandConfigPath()));
+                return false;
+            }
+            changed = true;
+        }
+    }
+
+    // 2. The managed Lua block, if the user drives Hyprland from Lua.
+    QFile luaInput(hyprlandLuaConfigPath());
+    if (luaInput.exists() && luaInput.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QString lua = QString::fromUtf8(luaInput.readAll());
+        luaInput.close();
+        const QString beginMarker = QStringLiteral("-- Tide Island shortcuts: begin (managed by Tide Island Config App).");
+        const QString endMarker = QStringLiteral("-- Tide Island shortcuts: end.");
+        const qsizetype begin = lua.indexOf(beginMarker);
+        const qsizetype end = begin < 0 ? -1 : lua.indexOf(endMarker, begin);
+        if (begin >= 0 && end >= 0) {
+            lua.remove(begin, end + endMarker.size() - begin);
+            QSaveFile file(hyprlandLuaConfigPath());
+            if (!file.open(QIODevice::WriteOnly | QIODevice::Text) || (file.write(lua.toUtf8()), !file.commit())) {
+                setErrorString(QStringLiteral("Could not rewrite %1").arg(hyprlandLuaConfigPath()));
+                return false;
+            }
+            changed = true;
+        }
+    }
+
+    // 3. The managed niri include plus its file.
+    const QString managedKdl = managedNiriShortcutConfigPath();
+    QFile niriInput(niriConfigPath());
+    if (niriInput.exists() && niriInput.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        const QString existing = QString::fromUtf8(niriInput.readAll());
+        niriInput.close();
+        const QString includeLine = QStringLiteral("include %1").arg(kdlQuote(managedKdl));
+        QStringList kept;
+        for (const QString &line : existing.split(u'\n')) {
+            const QString trimmed = line.trimmed();
+            if (trimmed == includeLine || trimmed == QStringLiteral("// Tide Island shortcut bindings"))
+                continue;
+            kept.append(line);
+        }
+        QString output = kept.join(u'\n');
+        if (!output.endsWith(u'\n'))
+            output.append(u'\n');
+        if (output != existing) {
+            QSaveFile file(niriConfigPath());
+            if (!file.open(QIODevice::WriteOnly | QIODevice::Text) || (file.write(output.toUtf8()), !file.commit())) {
+                setErrorString(QStringLiteral("Could not rewrite %1").arg(niriConfigPath()));
+                return false;
+            }
+            changed = true;
+        }
+    }
+    if (QFileInfo::exists(managedKdl) && QFile::remove(managedKdl))
+        changed = true;
+
+    if (changed && currentCompositor() == QStringLiteral("hyprland"))
+        reloadHyprland();
+
+    setErrorString(QString());
+    return true;
+}
+
 bool Backend::copyToClipboard(const QString &text){
     QClipboard *clipboard = QGuiApplication::clipboard();
     if (!clipboard) {

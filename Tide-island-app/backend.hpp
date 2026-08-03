@@ -29,6 +29,16 @@ public:
     QString colorScheme() const;
 
     Q_INVOKABLE bool save(const QVariantMap &userConfig);
+    // Fresh snapshot of the config on disk. QML holds `userConfig` as a
+    // constant snapshot, so anything long-lived must re-read through here
+    // before writing, or keys it never saw (shortcutBindings) get dropped.
+    Q_INVOKABLE QVariantMap currentUserConfig() const;
+    // Merge `patch` onto the config on disk and save. This is the only safe
+    // write path for the settings pages.
+    Q_INVOKABLE bool saveUserConfigPatch(const QVariantMap &patch);
+    Q_INVOKABLE bool managedShortcutsInstalled() const;
+    Q_INVOKABLE QString managedShortcutsSummary() const;
+    Q_INVOKABLE bool removeManagedShortcuts();
     Q_INVOKABLE void setColorScheme(const QString &colorScheme);
     Q_INVOKABLE bool copyToClipboard(const QString &text);
     Q_INVOKABLE QVariantList shortcutBindings() const;
