@@ -22,6 +22,9 @@ Item {
     property bool showMute: true
     property bool showBattery: true
     property real itemSpacing: 9
+    property color textColor: "white"
+    property bool shadowEnabled: true
+    property real batteryScale: 1
 
     signal activated()
 
@@ -64,6 +67,8 @@ Item {
             text: root.muteGlyph
             fontFamily: root.iconFontFamily
             pixelSize: root.iconPixelSize
+            textColor: root.textColor
+            shadowEnabled: root.shadowEnabled
             weight: Font.Normal
         }
 
@@ -73,6 +78,8 @@ Item {
             text: root.bluetoothGlyph
             fontFamily: root.iconFontFamily
             pixelSize: root.iconPixelSize
+            textColor: root.textColor
+            shadowEnabled: root.shadowEnabled
             weight: Font.Normal
             opacity: root.bluetoothConnected ? 1 : 0.45
         }
@@ -83,6 +90,8 @@ Item {
             text: root.wifiGlyph
             fontFamily: root.iconFontFamily
             pixelSize: root.iconPixelSize
+            textColor: root.textColor
+            shadowEnabled: root.shadowEnabled
             weight: Font.Normal
             opacity: root.wifiConnected ? 1 : (root.wifiEnabled ? 0.55 : 0.3)
         }
@@ -94,6 +103,15 @@ Item {
             charging: root.isCharging
             textFontFamily: root.textFontFamily
             iconFontFamily: root.iconFontFamily
+            batteryWidth: Math.round(32 * root.batteryScale)
+            batteryHeight: Math.round(15 * root.batteryScale)
+            tipWidth: Math.max(1, Math.round(2 * root.batteryScale))
+            tipHeight: Math.max(2, Math.round(5 * root.batteryScale))
+            outerRadius: Math.max(2, Math.round(5 * root.batteryScale))
+            labelFontSize: Math.max(6, Math.round(11 * root.batteryScale))
+            labelFontSizeCharging: Math.max(6, Math.round(10 * root.batteryScale))
+            boltSize: Math.max(5, Math.round(9 * root.batteryScale))
+            fillColor: root.textColor
         }
     }
 

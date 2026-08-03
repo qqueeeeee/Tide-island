@@ -10,6 +10,7 @@ Item {
     property string currentTime: "00:00"
     property string currentDateLabel: "Mon, Jan 01"
     property string clockFormat: "12"
+    property bool showSeconds: false
 
     readonly property var monthNames: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     readonly property var dayNames: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -28,12 +29,18 @@ Item {
 
     function updateClock() {
         const now = new Date();
-        root.currentTime = Qt.formatTime(now, root.clockFormat === "24" ? "HH:mm" : "hh:mm ap");
+        const pattern = root.clockFormat === "24"
+            ? (root.showSeconds ? "HH:mm:ss" : "HH:mm")
+            : (root.showSeconds ? "hh:mm:ss ap" : "hh:mm ap");
+        root.currentTime = Qt.formatTime(now, pattern);
         root.currentDateLabel = root.formatDateLabel(now);
-        clockTimer.interval = (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
+        clockTimer.interval = root.showSeconds
+            ? Math.max(120, 1000 - now.getMilliseconds())
+            : (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
     }
 
     onClockFormatChanged: updateClock()
+    onShowSecondsChanged: updateClock()
 
     Timer {
         id: clockTimer

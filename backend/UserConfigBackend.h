@@ -79,6 +79,36 @@ class UserConfigBackend final : public QObject {
     Q_PROPERTY(bool statusBarShowDateOnHover READ statusBarShowDateOnHover NOTIFY statusBarShowDateOnHoverChanged FINAL)
     Q_PROPERTY(bool statusBarFadeWithIsland READ statusBarFadeWithIsland NOTIFY statusBarFadeWithIslandChanged FINAL)
     Q_PROPERTY(bool statusBarShowRecordingPill READ statusBarShowRecordingPill NOTIFY statusBarShowRecordingPillChanged FINAL)
+    Q_PROPERTY(int statusBarHeight READ statusBarHeight NOTIFY statusBarHeightChanged FINAL)
+    Q_PROPERTY(int statusBarTopMargin READ statusBarTopMargin NOTIFY statusBarTopMarginChanged FINAL)
+    Q_PROPERTY(int statusBarFontSize READ statusBarFontSize NOTIFY statusBarFontSizeChanged FINAL)
+    Q_PROPERTY(int statusBarClockFontSize READ statusBarClockFontSize NOTIFY statusBarClockFontSizeChanged FINAL)
+    Q_PROPERTY(int statusBarIconSize READ statusBarIconSize NOTIFY statusBarIconSizeChanged FINAL)
+    Q_PROPERTY(int statusBarFontWeight READ statusBarFontWeight NOTIFY statusBarFontWeightChanged FINAL)
+    Q_PROPERTY(int statusBarTextOpacity READ statusBarTextOpacity NOTIFY statusBarTextOpacityChanged FINAL)
+    Q_PROPERTY(int statusBarDimAmount READ statusBarDimAmount NOTIFY statusBarDimAmountChanged FINAL)
+    Q_PROPERTY(int statusBarIconSpacing READ statusBarIconSpacing NOTIFY statusBarIconSpacingChanged FINAL)
+    Q_PROPERTY(int statusBarWorkspaceDotSize READ statusBarWorkspaceDotSize NOTIFY statusBarWorkspaceDotSizeChanged FINAL)
+    Q_PROPERTY(int statusBarWorkspaceActiveWidth READ statusBarWorkspaceActiveWidth NOTIFY statusBarWorkspaceActiveWidthChanged FINAL)
+    Q_PROPERTY(int statusBarWorkspaceSpacing READ statusBarWorkspaceSpacing NOTIFY statusBarWorkspaceSpacingChanged FINAL)
+    Q_PROPERTY(int statusBarWorkspaceMinimumCount READ statusBarWorkspaceMinimumCount NOTIFY statusBarWorkspaceMinimumCountChanged FINAL)
+    Q_PROPERTY(int statusBarBatteryScale READ statusBarBatteryScale NOTIFY statusBarBatteryScaleChanged FINAL)
+    Q_PROPERTY(int statusBarActiveWindowMaxWidth READ statusBarActiveWindowMaxWidth NOTIFY statusBarActiveWindowMaxWidthChanged FINAL)
+    Q_PROPERTY(int statusBarActiveWindowOpacity READ statusBarActiveWindowOpacity NOTIFY statusBarActiveWindowOpacityChanged FINAL)
+    Q_PROPERTY(int statusBarBackgroundOpacity READ statusBarBackgroundOpacity NOTIFY statusBarBackgroundOpacityChanged FINAL)
+    Q_PROPERTY(int statusBarBackgroundRadius READ statusBarBackgroundRadius NOTIFY statusBarBackgroundRadiusChanged FINAL)
+    Q_PROPERTY(int statusBarBackgroundMargin READ statusBarBackgroundMargin NOTIFY statusBarBackgroundMarginChanged FINAL)
+    Q_PROPERTY(bool statusBarUseIslandBaseline READ statusBarUseIslandBaseline NOTIFY statusBarUseIslandBaselineChanged FINAL)
+    Q_PROPERTY(bool statusBarTextShadow READ statusBarTextShadow NOTIFY statusBarTextShadowChanged FINAL)
+    Q_PROPERTY(bool statusBarBackgroundEnabled READ statusBarBackgroundEnabled NOTIFY statusBarBackgroundEnabledChanged FINAL)
+    Q_PROPERTY(bool statusBarShowWifi READ statusBarShowWifi NOTIFY statusBarShowWifiChanged FINAL)
+    Q_PROPERTY(bool statusBarShowBluetooth READ statusBarShowBluetooth NOTIFY statusBarShowBluetoothChanged FINAL)
+    Q_PROPERTY(bool statusBarShowBattery READ statusBarShowBattery NOTIFY statusBarShowBatteryChanged FINAL)
+    Q_PROPERTY(bool statusBarShowMute READ statusBarShowMute NOTIFY statusBarShowMuteChanged FINAL)
+    Q_PROPERTY(bool statusBarShowDate READ statusBarShowDate NOTIFY statusBarShowDateChanged FINAL)
+    Q_PROPERTY(bool statusBarShowSeconds READ statusBarShowSeconds NOTIFY statusBarShowSecondsChanged FINAL)
+    Q_PROPERTY(QString statusBarTextColor READ statusBarTextColor NOTIFY statusBarTextColorChanged FINAL)
+    Q_PROPERTY(QString statusBarBackgroundColor READ statusBarBackgroundColor NOTIFY statusBarBackgroundColorChanged FINAL)
     Q_PROPERTY(QString captureVideoDirectory READ captureVideoDirectory NOTIFY captureVideoDirectoryChanged FINAL)
     Q_PROPERTY(QString captureScreenshotDirectory READ captureScreenshotDirectory NOTIFY captureScreenshotDirectoryChanged FINAL)
     Q_PROPERTY(QString captureAnnotationTool READ captureAnnotationTool NOTIFY captureAnnotationToolChanged FINAL)
@@ -154,6 +184,36 @@ public:
     bool statusBarShowDateOnHover() const;
     bool statusBarFadeWithIsland() const;
     bool statusBarShowRecordingPill() const;
+    int statusBarHeight() const;
+    int statusBarTopMargin() const;
+    int statusBarFontSize() const;
+    int statusBarClockFontSize() const;
+    int statusBarIconSize() const;
+    int statusBarFontWeight() const;
+    int statusBarTextOpacity() const;
+    int statusBarDimAmount() const;
+    int statusBarIconSpacing() const;
+    int statusBarWorkspaceDotSize() const;
+    int statusBarWorkspaceActiveWidth() const;
+    int statusBarWorkspaceSpacing() const;
+    int statusBarWorkspaceMinimumCount() const;
+    int statusBarBatteryScale() const;
+    int statusBarActiveWindowMaxWidth() const;
+    int statusBarActiveWindowOpacity() const;
+    int statusBarBackgroundOpacity() const;
+    int statusBarBackgroundRadius() const;
+    int statusBarBackgroundMargin() const;
+    bool statusBarUseIslandBaseline() const;
+    bool statusBarTextShadow() const;
+    bool statusBarBackgroundEnabled() const;
+    bool statusBarShowWifi() const;
+    bool statusBarShowBluetooth() const;
+    bool statusBarShowBattery() const;
+    bool statusBarShowMute() const;
+    bool statusBarShowDate() const;
+    bool statusBarShowSeconds() const;
+    QString statusBarTextColor() const;
+    QString statusBarBackgroundColor() const;
     QString captureVideoDirectory() const;
     QString captureScreenshotDirectory() const;
     QString captureAnnotationTool() const;
@@ -232,6 +292,36 @@ signals:
     void statusBarShowDateOnHoverChanged();
     void statusBarFadeWithIslandChanged();
     void statusBarShowRecordingPillChanged();
+    void statusBarHeightChanged();
+    void statusBarTopMarginChanged();
+    void statusBarFontSizeChanged();
+    void statusBarClockFontSizeChanged();
+    void statusBarIconSizeChanged();
+    void statusBarFontWeightChanged();
+    void statusBarTextOpacityChanged();
+    void statusBarDimAmountChanged();
+    void statusBarIconSpacingChanged();
+    void statusBarWorkspaceDotSizeChanged();
+    void statusBarWorkspaceActiveWidthChanged();
+    void statusBarWorkspaceSpacingChanged();
+    void statusBarWorkspaceMinimumCountChanged();
+    void statusBarBatteryScaleChanged();
+    void statusBarActiveWindowMaxWidthChanged();
+    void statusBarActiveWindowOpacityChanged();
+    void statusBarBackgroundOpacityChanged();
+    void statusBarBackgroundRadiusChanged();
+    void statusBarBackgroundMarginChanged();
+    void statusBarUseIslandBaselineChanged();
+    void statusBarTextShadowChanged();
+    void statusBarBackgroundEnabledChanged();
+    void statusBarShowWifiChanged();
+    void statusBarShowBluetoothChanged();
+    void statusBarShowBatteryChanged();
+    void statusBarShowMuteChanged();
+    void statusBarShowDateChanged();
+    void statusBarShowSecondsChanged();
+    void statusBarTextColorChanged();
+    void statusBarBackgroundColorChanged();
     void captureVideoDirectoryChanged();
     void captureScreenshotDirectoryChanged();
     void captureAnnotationToolChanged();
@@ -310,6 +400,36 @@ private:
     bool m_statusBarShowDateOnHover = true;
     bool m_statusBarFadeWithIsland = true;
     bool m_statusBarShowRecordingPill = true;
+    int m_statusBarHeight = 34;
+    int m_statusBarTopMargin = 0;
+    int m_statusBarFontSize = 13;
+    int m_statusBarClockFontSize = 13;
+    int m_statusBarIconSize = 13;
+    int m_statusBarFontWeight = 600;
+    int m_statusBarTextOpacity = 100;
+    int m_statusBarDimAmount = 40;
+    int m_statusBarIconSpacing = 9;
+    int m_statusBarWorkspaceDotSize = 7;
+    int m_statusBarWorkspaceActiveWidth = 18;
+    int m_statusBarWorkspaceSpacing = 6;
+    int m_statusBarWorkspaceMinimumCount = 4;
+    int m_statusBarBatteryScale = 100;
+    int m_statusBarActiveWindowMaxWidth = 0;
+    int m_statusBarActiveWindowOpacity = 100;
+    int m_statusBarBackgroundOpacity = 45;
+    int m_statusBarBackgroundRadius = 0;
+    int m_statusBarBackgroundMargin = 0;
+    bool m_statusBarUseIslandBaseline = true;
+    bool m_statusBarTextShadow = true;
+    bool m_statusBarBackgroundEnabled = false;
+    bool m_statusBarShowWifi = true;
+    bool m_statusBarShowBluetooth = true;
+    bool m_statusBarShowBattery = true;
+    bool m_statusBarShowMute = true;
+    bool m_statusBarShowDate = false;
+    bool m_statusBarShowSeconds = false;
+    QString m_statusBarTextColor = QStringLiteral("#ffffff");
+    QString m_statusBarBackgroundColor = QStringLiteral("#000000");
     QString m_captureVideoDirectory;
     QString m_captureScreenshotDirectory;
     QString m_captureAnnotationTool;

@@ -371,6 +371,156 @@ bool UserConfigBackend::statusBarEnabled() const
     return m_statusBarEnabled;
 }
 
+int UserConfigBackend::statusBarHeight() const
+{
+    return m_statusBarHeight;
+}
+
+int UserConfigBackend::statusBarTopMargin() const
+{
+    return m_statusBarTopMargin;
+}
+
+int UserConfigBackend::statusBarFontSize() const
+{
+    return m_statusBarFontSize;
+}
+
+int UserConfigBackend::statusBarClockFontSize() const
+{
+    return m_statusBarClockFontSize;
+}
+
+int UserConfigBackend::statusBarIconSize() const
+{
+    return m_statusBarIconSize;
+}
+
+int UserConfigBackend::statusBarFontWeight() const
+{
+    return m_statusBarFontWeight;
+}
+
+int UserConfigBackend::statusBarTextOpacity() const
+{
+    return m_statusBarTextOpacity;
+}
+
+int UserConfigBackend::statusBarDimAmount() const
+{
+    return m_statusBarDimAmount;
+}
+
+int UserConfigBackend::statusBarIconSpacing() const
+{
+    return m_statusBarIconSpacing;
+}
+
+int UserConfigBackend::statusBarWorkspaceDotSize() const
+{
+    return m_statusBarWorkspaceDotSize;
+}
+
+int UserConfigBackend::statusBarWorkspaceActiveWidth() const
+{
+    return m_statusBarWorkspaceActiveWidth;
+}
+
+int UserConfigBackend::statusBarWorkspaceSpacing() const
+{
+    return m_statusBarWorkspaceSpacing;
+}
+
+int UserConfigBackend::statusBarWorkspaceMinimumCount() const
+{
+    return m_statusBarWorkspaceMinimumCount;
+}
+
+int UserConfigBackend::statusBarBatteryScale() const
+{
+    return m_statusBarBatteryScale;
+}
+
+int UserConfigBackend::statusBarActiveWindowMaxWidth() const
+{
+    return m_statusBarActiveWindowMaxWidth;
+}
+
+int UserConfigBackend::statusBarActiveWindowOpacity() const
+{
+    return m_statusBarActiveWindowOpacity;
+}
+
+int UserConfigBackend::statusBarBackgroundOpacity() const
+{
+    return m_statusBarBackgroundOpacity;
+}
+
+int UserConfigBackend::statusBarBackgroundRadius() const
+{
+    return m_statusBarBackgroundRadius;
+}
+
+int UserConfigBackend::statusBarBackgroundMargin() const
+{
+    return m_statusBarBackgroundMargin;
+}
+
+bool UserConfigBackend::statusBarUseIslandBaseline() const
+{
+    return m_statusBarUseIslandBaseline;
+}
+
+bool UserConfigBackend::statusBarTextShadow() const
+{
+    return m_statusBarTextShadow;
+}
+
+bool UserConfigBackend::statusBarBackgroundEnabled() const
+{
+    return m_statusBarBackgroundEnabled;
+}
+
+bool UserConfigBackend::statusBarShowWifi() const
+{
+    return m_statusBarShowWifi;
+}
+
+bool UserConfigBackend::statusBarShowBluetooth() const
+{
+    return m_statusBarShowBluetooth;
+}
+
+bool UserConfigBackend::statusBarShowBattery() const
+{
+    return m_statusBarShowBattery;
+}
+
+bool UserConfigBackend::statusBarShowMute() const
+{
+    return m_statusBarShowMute;
+}
+
+bool UserConfigBackend::statusBarShowDate() const
+{
+    return m_statusBarShowDate;
+}
+
+bool UserConfigBackend::statusBarShowSeconds() const
+{
+    return m_statusBarShowSeconds;
+}
+
+QString UserConfigBackend::statusBarTextColor() const
+{
+    return m_statusBarTextColor;
+}
+
+QString UserConfigBackend::statusBarBackgroundColor() const
+{
+    return m_statusBarBackgroundColor;
+}
+
 int UserConfigBackend::statusBarSideMargin() const
 {
     return m_statusBarSideMargin;
@@ -631,6 +781,36 @@ void UserConfigBackend::loadConfig()
     updateField(this, m_statusBarShowDateOnHover, jsonBool(configObject, QLatin1String("statusBarShowDateOnHover"), true), &UserConfigBackend::statusBarShowDateOnHoverChanged);
     updateField(this, m_statusBarFadeWithIsland, jsonBool(configObject, QLatin1String("statusBarFadeWithIsland"), true), &UserConfigBackend::statusBarFadeWithIslandChanged);
     updateField(this, m_statusBarShowRecordingPill, jsonBool(configObject, QLatin1String("statusBarShowRecordingPill"), true), &UserConfigBackend::statusBarShowRecordingPillChanged);
+    updateField(this, m_statusBarHeight, jsonBoundedInt(configObject, QLatin1String("statusBarHeight"), 34, 0, 240), &UserConfigBackend::statusBarHeightChanged);
+    updateField(this, m_statusBarTopMargin, jsonBoundedInt(configObject, QLatin1String("statusBarTopMargin"), 0, 0, 240), &UserConfigBackend::statusBarTopMarginChanged);
+    updateField(this, m_statusBarFontSize, jsonBoundedInt(configObject, QLatin1String("statusBarFontSize"), 13, 7, 40), &UserConfigBackend::statusBarFontSizeChanged);
+    updateField(this, m_statusBarClockFontSize, jsonBoundedInt(configObject, QLatin1String("statusBarClockFontSize"), 13, 7, 40), &UserConfigBackend::statusBarClockFontSizeChanged);
+    updateField(this, m_statusBarIconSize, jsonBoundedInt(configObject, QLatin1String("statusBarIconSize"), 13, 7, 40), &UserConfigBackend::statusBarIconSizeChanged);
+    updateField(this, m_statusBarFontWeight, jsonBoundedInt(configObject, QLatin1String("statusBarFontWeight"), 600, 300, 900), &UserConfigBackend::statusBarFontWeightChanged);
+    updateField(this, m_statusBarTextOpacity, jsonBoundedInt(configObject, QLatin1String("statusBarTextOpacity"), 100, 10, 100), &UserConfigBackend::statusBarTextOpacityChanged);
+    updateField(this, m_statusBarDimAmount, jsonBoundedInt(configObject, QLatin1String("statusBarDimAmount"), 40, 0, 100), &UserConfigBackend::statusBarDimAmountChanged);
+    updateField(this, m_statusBarIconSpacing, jsonBoundedInt(configObject, QLatin1String("statusBarIconSpacing"), 9, 0, 40), &UserConfigBackend::statusBarIconSpacingChanged);
+    updateField(this, m_statusBarWorkspaceDotSize, jsonBoundedInt(configObject, QLatin1String("statusBarWorkspaceDotSize"), 7, 2, 28), &UserConfigBackend::statusBarWorkspaceDotSizeChanged);
+    updateField(this, m_statusBarWorkspaceActiveWidth, jsonBoundedInt(configObject, QLatin1String("statusBarWorkspaceActiveWidth"), 18, 4, 80), &UserConfigBackend::statusBarWorkspaceActiveWidthChanged);
+    updateField(this, m_statusBarWorkspaceSpacing, jsonBoundedInt(configObject, QLatin1String("statusBarWorkspaceSpacing"), 6, 0, 40), &UserConfigBackend::statusBarWorkspaceSpacingChanged);
+    updateField(this, m_statusBarWorkspaceMinimumCount, jsonBoundedInt(configObject, QLatin1String("statusBarWorkspaceMinimumCount"), 4, 1, 10), &UserConfigBackend::statusBarWorkspaceMinimumCountChanged);
+    updateField(this, m_statusBarBatteryScale, jsonBoundedInt(configObject, QLatin1String("statusBarBatteryScale"), 100, 50, 220), &UserConfigBackend::statusBarBatteryScaleChanged);
+    updateField(this, m_statusBarActiveWindowMaxWidth, jsonBoundedInt(configObject, QLatin1String("statusBarActiveWindowMaxWidth"), 0, 0, 1600), &UserConfigBackend::statusBarActiveWindowMaxWidthChanged);
+    updateField(this, m_statusBarActiveWindowOpacity, jsonBoundedInt(configObject, QLatin1String("statusBarActiveWindowOpacity"), 100, 20, 100), &UserConfigBackend::statusBarActiveWindowOpacityChanged);
+    updateField(this, m_statusBarBackgroundOpacity, jsonBoundedInt(configObject, QLatin1String("statusBarBackgroundOpacity"), 45, 0, 100), &UserConfigBackend::statusBarBackgroundOpacityChanged);
+    updateField(this, m_statusBarBackgroundRadius, jsonBoundedInt(configObject, QLatin1String("statusBarBackgroundRadius"), 0, 0, 60), &UserConfigBackend::statusBarBackgroundRadiusChanged);
+    updateField(this, m_statusBarBackgroundMargin, jsonBoundedInt(configObject, QLatin1String("statusBarBackgroundMargin"), 0, 0, 200), &UserConfigBackend::statusBarBackgroundMarginChanged);
+    updateField(this, m_statusBarUseIslandBaseline, jsonBool(configObject, QLatin1String("statusBarUseIslandBaseline"), true), &UserConfigBackend::statusBarUseIslandBaselineChanged);
+    updateField(this, m_statusBarTextShadow, jsonBool(configObject, QLatin1String("statusBarTextShadow"), true), &UserConfigBackend::statusBarTextShadowChanged);
+    updateField(this, m_statusBarBackgroundEnabled, jsonBool(configObject, QLatin1String("statusBarBackgroundEnabled"), false), &UserConfigBackend::statusBarBackgroundEnabledChanged);
+    updateField(this, m_statusBarShowWifi, jsonBool(configObject, QLatin1String("statusBarShowWifi"), true), &UserConfigBackend::statusBarShowWifiChanged);
+    updateField(this, m_statusBarShowBluetooth, jsonBool(configObject, QLatin1String("statusBarShowBluetooth"), true), &UserConfigBackend::statusBarShowBluetoothChanged);
+    updateField(this, m_statusBarShowBattery, jsonBool(configObject, QLatin1String("statusBarShowBattery"), true), &UserConfigBackend::statusBarShowBatteryChanged);
+    updateField(this, m_statusBarShowMute, jsonBool(configObject, QLatin1String("statusBarShowMute"), true), &UserConfigBackend::statusBarShowMuteChanged);
+    updateField(this, m_statusBarShowDate, jsonBool(configObject, QLatin1String("statusBarShowDate"), false), &UserConfigBackend::statusBarShowDateChanged);
+    updateField(this, m_statusBarShowSeconds, jsonBool(configObject, QLatin1String("statusBarShowSeconds"), false), &UserConfigBackend::statusBarShowSecondsChanged);
+    updateField(this, m_statusBarTextColor, jsonString(configObject, QLatin1String("statusBarTextColor"), QStringLiteral("#ffffff")), &UserConfigBackend::statusBarTextColorChanged);
+    updateField(this, m_statusBarBackgroundColor, jsonString(configObject, QLatin1String("statusBarBackgroundColor"), QStringLiteral("#000000")), &UserConfigBackend::statusBarBackgroundColorChanged);
     updateField(this, m_captureVideoDirectory, jsonString(configObject, QLatin1String("captureVideoDirectory"), QString()), &UserConfigBackend::captureVideoDirectoryChanged);
     updateField(this, m_captureScreenshotDirectory, jsonString(configObject, QLatin1String("captureScreenshotDirectory"), QString()), &UserConfigBackend::captureScreenshotDirectoryChanged);
     updateField(this, m_captureAnnotationTool, jsonString(configObject, QLatin1String("captureAnnotationTool"), QString()), &UserConfigBackend::captureAnnotationToolChanged);

@@ -12,6 +12,10 @@ Item {
     property string textFontFamily: ""
     property int pixelSize: 13
     property real maximumWidth: 260
+    property int weight: Font.DemiBold
+    property color textColor: "white"
+    property bool shadowEnabled: true
+    property real opacityScale: 1
 
     readonly property var activeToplevel: ToplevelManager.activeToplevel
     readonly property string appId: activeToplevel && activeToplevel.appId
@@ -49,7 +53,7 @@ Item {
     implicitHeight: label.implicitHeight
     width: implicitWidth
     height: implicitHeight
-    opacity: displayText === "" ? 0 : 1
+    opacity: displayText === "" ? 0 : root.opacityScale
 
     Behavior on opacity {
         NumberAnimation { duration: 180; easing.type: Easing.InOutQuad }
@@ -62,7 +66,9 @@ Item {
         text: root.displayText
         fontFamily: root.textFontFamily
         pixelSize: root.pixelSize
-        weight: Font.DemiBold
+        weight: root.weight
+        textColor: root.textColor
+        shadowEnabled: root.shadowEnabled
         maximumWidth: root.maximumWidth
     }
 }

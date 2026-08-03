@@ -14,6 +14,9 @@ Item {
     property real activeDotWidth: 18
     property real spacing: 6
     property bool interactive: true
+    property color dotColor: "white"
+    property bool shadowEnabled: true
+    property real inactiveOpacity: 0.45
 
     signal focusRequested(int workspaceId)
 
@@ -71,6 +74,7 @@ Item {
                 Rectangle {
                     id: dotShadow
 
+                    visible: root.shadowEnabled
                     anchors.fill: parent
                     anchors.topMargin: 1
                     anchors.bottomMargin: -1
@@ -81,7 +85,10 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: height / 2
-                    color: dotItem.isActive ? "white" : Qt.rgba(1, 1, 1, hoverHandler.hovered ? 0.7 : 0.45)
+                    color: dotItem.isActive
+                        ? root.dotColor
+                        : Qt.rgba(root.dotColor.r, root.dotColor.g, root.dotColor.b,
+                                  hoverHandler.hovered ? Math.min(1, root.inactiveOpacity + 0.25) : root.inactiveOpacity)
 
                     Behavior on color {
                         ColorAnimation { duration: 180 }

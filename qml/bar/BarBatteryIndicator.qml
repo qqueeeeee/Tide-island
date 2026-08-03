@@ -21,8 +21,9 @@ Item {
     readonly property string chargingIconGlyph: "\uf0e7"
     readonly property real clampedLevel: Math.max(0, Math.min(100, level))
     readonly property bool roundedEnd: clampedLevel >= 85
-    readonly property color bodyColor: (!charging && clampedLevel <= 20) ? "#ff3b30" : "white"
-    readonly property color emptyColor: Qt.rgba(1, 1, 1, 0.56)
+    property color fillColor: "white"
+    readonly property color bodyColor: (!charging && clampedLevel <= 20) ? "#ff3b30" : fillColor
+    readonly property color emptyColor: Qt.rgba(fillColor.r, fillColor.g, fillColor.b, 0.56)
 
     implicitWidth: batteryWidth
     implicitHeight: batteryHeight

@@ -67,6 +67,7 @@ PanelWindow {
     Island.IslandClock {
         id: clock
         clockFormat: root.userConfig.clockFormat
+        showSeconds: root.userConfig.statusBarShowSeconds
     }
 
     Common.HyprlandDispatch {
