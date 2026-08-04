@@ -2,6 +2,7 @@ import QtQuick
 import TideIsland 1.0
 
 // Grouped settings card: title, optional caption, hairline-separated rows.
+// Restyled as a near-black glass panel matching the island's chip surfaces.
 Rectangle {
     id: card
 
@@ -32,7 +33,7 @@ Rectangle {
                 text: card.title
                 color: AppTheme.text
                 font.family: AppTheme.fontFamily
-                font.pixelSize: 15
+                font.pixelSize: AppTheme.fontSizeHeading
                 font.weight: Font.DemiBold
             }
 
@@ -43,7 +44,7 @@ Rectangle {
                 color: AppTheme.textFaint
                 wrapMode: Text.WordWrap
                 font.family: AppTheme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: AppTheme.fontSizeCaption
             }
         }
 

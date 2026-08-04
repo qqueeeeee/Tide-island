@@ -62,6 +62,39 @@ Item {
             + "." + root.pad2(now.getSeconds());
     }
 
+    // Minimal strftime for the handful of tokens the naming patterns use.
+    function formatNamePattern(pattern) {
+        const now = new Date();
+        const raw = String(pattern === undefined || pattern === null ? "" : pattern).trim();
+        if (raw === "")
+            return "";
+        return raw
+            .replace(/%Y/g, now.getFullYear())
+            .replace(/%m/g, root.pad2(now.getMonth() + 1))
+            .replace(/%d/g, root.pad2(now.getDate()))
+            .replace(/%H/g, root.pad2(now.getHours()))
+            .replace(/%M/g, root.pad2(now.getMinutes()))
+            .replace(/%S/g, root.pad2(now.getSeconds()));
+    }
+
+    readonly property string screenshotFormatExtension: userConfig.captureScreenshotFormat === "jpg" ? "jpg" : "png"
+    readonly property string videoFormatExtension: {
+        const format = String(userConfig.captureVideoFormat || "mp4");
+        return (format === "mkv" || format === "webm") ? format : "mp4";
+    }
+
+    function screenshotFileName() {
+        const pattern = root.formatNamePattern(userConfig.captureScreenshotNamePattern);
+        return (pattern !== "" ? pattern : "screenshot_" + root.timestamp())
+            + "." + root.screenshotFormatExtension;
+    }
+
+    function videoFileName() {
+        const pattern = root.formatNamePattern(userConfig.captureVideoNamePattern);
+        return (pattern !== "" ? pattern : "recording_" + root.timestamp())
+            + "." + root.videoFormatExtension;
+    }
+
     function shellQuote(value) {
         return "'" + String(value).replace(/'/g, "'\\''") + "'";
     }
@@ -113,7 +146,7 @@ Item {
 
         const useRegion = region === true;
         const directory = root.videoDirectory;
-        const path = directory + "/recording_" + root.timestamp() + ".mp4";
+        const path = directory + "/" + root.videoFileName();
         const audio = root.userConfig.captureRecordAudio
             ? " --audio=$(pactl get-default-sink).monitor"
             : "";
@@ -200,25 +233,31 @@ Item {
 
         const requested = mode === undefined || mode === null ? "area" : String(mode);
         const directory = root.screenshotDirectory;
-        const path = directory + "/screenshot_" + root.timestamp() + ".png";
+        const path = directory + "/" + root.screenshotFileName();
         const quoted = root.shellQuote(path);
         const prefix = "mkdir -p " + root.shellQuote(directory) + "; ";
         const copy = root.userConfig.captureCopyToClipboard
             ? "wl-copy --type image/png < " + quoted + "; "
             : "";
 
+        const pngQuoted = root.shellQuote(directory + "/.tide-capture-tmp.png");
+        const target = root.screenshotFormatExtension === "jpg" ? pngQuoted : quoted;
         let grab;
         // grimblast (hyprmoon's old keybinds used it) handles region selection and
         // saving in one shot; grim + slurp is the fallback when it is absent.
         if (requested === "screen") {
-            grab = "if command -v grimblast >/dev/null 2>&1; then grimblast save screen " + quoted
-                + "; else grim " + quoted + "; fi";
+            grab = "if command -v grimblast >/dev/null 2>&1; then grimblast save screen " + target
+                + "; else grim " + target + "; fi";
         } else if (requested === "window") {
-            grab = "if command -v grimblast >/dev/null 2>&1; then grimblast save active " + quoted
-                + "; else g=$(slurp -r) || exit 1; grim -g \"$g\" " + quoted + "; fi";
+            grab = "if command -v grimblast >/dev/null 2>&1; then grimblast save active " + target
+                + "; else g=$(slurp -r) || exit 1; grim -g \"$g\" " + target + "; fi";
         } else {
-            grab = "if command -v grimblast >/dev/null 2>&1; then grimblast save area " + quoted
-                + "; else g=$(slurp) || exit 1; grim -g \"$g\" " + quoted + "; fi";
+            grab = "if command -v grimblast >/dev/null 2>&1; then grimblast save area " + target
+                + "; else g=$(slurp) || exit 1; grim -g \"$g\" " + target + "; fi";
+        }
+        if (root.screenshotFormatExtension === "jpg") {
+            grab += " && (command -v convert >/dev/null 2>&1 && convert " + pngQuoted + " " + quoted
+                + " && rm -f " + pngQuoted + " || mv " + pngQuoted + " " + quoted + ")";
         }
 
         // Fail loudly: without this a missing grim/slurp/wl-clipboard binary looks

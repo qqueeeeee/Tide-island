@@ -9,6 +9,7 @@
 #include <QJsonObject>
 #include <QJsonParseError>
 #include <QProcess>
+#include <QStandardPaths>
 #include <QRegularExpression>
 #include <QSaveFile>
 #include <QSettings>
@@ -1170,6 +1171,69 @@ bool Backend::saveApplicationLauncherFavorites(const QVariantList &favoriteIds){
 
     setErrorString(QString());
     return true;
+}
+
+namespace {
+
+int runSystemctl(const QStringList &arguments)
+{
+    QProcess process;
+    process.setStandardOutputFile(QProcess::nullDevice());
+    process.setStandardErrorFile(QProcess::nullDevice());
+    process.start(QStringLiteral("systemctl"), arguments);
+    if (!process.waitForStarted(2000) || !process.waitForFinished(8000))
+        return -1;
+    if (process.exitStatus() != QProcess::NormalExit)
+        return -1;
+    return process.exitCode();
+}
+
+} // namespace
+
+bool Backend::autostartAvailable() const
+{
+    return !QStandardPaths::findExecutable(QStringLiteral("systemctl")).isEmpty();
+}
+
+bool Backend::autostartEnabled() const
+{
+    return runSystemctl({ QStringLiteral("--user"),
+                          QStringLiteral("is-enabled"),
+                          QStringLiteral("tide-island.service") }) == 0;
+}
+
+bool Backend::setAutostartEnabled(bool enabled)
+{
+    if (!autostartAvailable()) {
+        setErrorString(QStringLiteral("systemctl was not found, so autostart cannot be managed here."));
+        return false;
+    }
+
+    runSystemctl({ QStringLiteral("--user"), QStringLiteral("daemon-reload") });
+    const QStringList arguments = enabled
+        ? QStringList{ QStringLiteral("--user"), QStringLiteral("enable"), QStringLiteral("--now"),
+                       QStringLiteral("tide-island.service") }
+        : QStringList{ QStringLiteral("--user"), QStringLiteral("disable"),
+                       QStringLiteral("tide-island.service") };
+    const int exitCode = runSystemctl(arguments);
+    if (exitCode != 0) {
+        setErrorString(enabled
+            ? QStringLiteral("Could not enable tide-island.service. Install the user service first (./install.sh).")
+            : QStringLiteral("Could not disable tide-island.service."));
+        return false;
+    }
+
+    setErrorString(QString());
+    return true;
+}
+
+QString Backend::autostartSummary() const
+{
+    if (!autostartAvailable())
+        return QStringLiteral("systemctl not available — start Tide Island from your compositor config.");
+    return autostartEnabled()
+        ? QStringLiteral("tide-island.service is enabled and starts with your session.")
+        : QStringLiteral("tide-island.service is not enabled.");
 }
 
 bool Backend::toggleApplicationLauncher(){

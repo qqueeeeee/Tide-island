@@ -118,6 +118,60 @@ class UserConfigBackend final : public QObject {
     Q_PROPERTY(bool captureShowScreenshotPreview READ captureShowScreenshotPreview NOTIFY captureShowScreenshotPreviewChanged FINAL)
     Q_PROPERTY(int captureScreenshotPreviewSeconds READ captureScreenshotPreviewSeconds NOTIFY captureScreenshotPreviewSecondsChanged FINAL)
 
+    Q_PROPERTY(QString motionPreset READ motionPreset NOTIFY motionPresetChanged FINAL)
+    Q_PROPERTY(int motionShapeSpring READ motionShapeSpring NOTIFY motionShapeSpringChanged FINAL)
+    Q_PROPERTY(int motionShapeDamping READ motionShapeDamping NOTIFY motionShapeDampingChanged FINAL)
+    Q_PROPERTY(int motionRadiusSpring READ motionRadiusSpring NOTIFY motionRadiusSpringChanged FINAL)
+    Q_PROPERTY(int motionRadiusDamping READ motionRadiusDamping NOTIFY motionRadiusDampingChanged FINAL)
+    Q_PROPERTY(int motionContentRevealDuration READ motionContentRevealDuration NOTIFY motionContentRevealDurationChanged FINAL)
+    Q_PROPERTY(int motionPressScale READ motionPressScale NOTIFY motionPressScaleChanged FINAL)
+    Q_PROPERTY(int motionPulseScale READ motionPulseScale NOTIFY motionPulseScaleChanged FINAL)
+    Q_PROPERTY(int motionLongPressMs READ motionLongPressMs NOTIFY motionLongPressMsChanged FINAL)
+    Q_PROPERTY(bool motionIdleBreathEnabled READ motionIdleBreathEnabled NOTIFY motionIdleBreathEnabledChanged FINAL)
+
+    Q_PROPERTY(QString idleStyle READ idleStyle NOTIFY idleStyleChanged FINAL)
+    Q_PROPERTY(bool idleShowUsageRings READ idleShowUsageRings NOTIFY idleShowUsageRingsChanged FINAL)
+    Q_PROPERTY(int idleDotSize READ idleDotSize NOTIFY idleDotSizeChanged FINAL)
+    Q_PROPERTY(int idleDotOpacity READ idleDotOpacity NOTIFY idleDotOpacityChanged FINAL)
+
+    Q_PROPERTY(QVariantList liveActivityPriority READ liveActivityPriority NOTIFY liveActivityPriorityChanged FINAL)
+    Q_PROPERTY(int transientNotificationMs READ transientNotificationMs NOTIFY transientNotificationMsChanged FINAL)
+    Q_PROPERTY(int transientShotMs READ transientShotMs NOTIFY transientShotMsChanged FINAL)
+    Q_PROPERTY(int transientBannerMs READ transientBannerMs NOTIFY transientBannerMsChanged FINAL)
+    Q_PROPERTY(int transientHudMs READ transientHudMs NOTIFY transientHudMsChanged FINAL)
+    Q_PROPERTY(int transientClockMs READ transientClockMs NOTIFY transientClockMsChanged FINAL)
+    Q_PROPERTY(bool notificationAutoExpand READ notificationAutoExpand NOTIFY notificationAutoExpandChanged FINAL)
+
+    Q_PROPERTY(QVariantList controlCenterModules READ controlCenterModules NOTIFY controlCenterModulesChanged FINAL)
+    Q_PROPERTY(bool controlCenterShowVolume READ controlCenterShowVolume NOTIFY controlCenterShowVolumeChanged FINAL)
+    Q_PROPERTY(bool controlCenterShowBrightness READ controlCenterShowBrightness NOTIFY controlCenterShowBrightnessChanged FINAL)
+
+    Q_PROPERTY(QVariantList mediaExcludedPlayers READ mediaExcludedPlayers NOTIFY mediaExcludedPlayersChanged FINAL)
+    Q_PROPERTY(QVariantList mediaPreferredPlayers READ mediaPreferredPlayers NOTIFY mediaPreferredPlayersChanged FINAL)
+
+    Q_PROPERTY(int clipboardHistoryLimit READ clipboardHistoryLimit NOTIFY clipboardHistoryLimitChanged FINAL)
+    Q_PROPERTY(QVariantList clipboardExcludedApps READ clipboardExcludedApps NOTIFY clipboardExcludedAppsChanged FINAL)
+    Q_PROPERTY(bool clipboardShowImagePreviews READ clipboardShowImagePreviews NOTIFY clipboardShowImagePreviewsChanged FINAL)
+
+    Q_PROPERTY(QVariantList notificationsBlockedApps READ notificationsBlockedApps NOTIFY notificationsBlockedAppsChanged FINAL)
+    Q_PROPERTY(QVariantList notificationsAllowedApps READ notificationsAllowedApps NOTIFY notificationsAllowedAppsChanged FINAL)
+    Q_PROPERTY(bool doNotDisturbEnabled READ doNotDisturbEnabled NOTIFY doNotDisturbEnabledChanged FINAL)
+    Q_PROPERTY(bool dndScheduleEnabled READ dndScheduleEnabled NOTIFY dndScheduleEnabledChanged FINAL)
+    Q_PROPERTY(QString dndStartTime READ dndStartTime NOTIFY dndStartTimeChanged FINAL)
+    Q_PROPERTY(QString dndEndTime READ dndEndTime NOTIFY dndEndTimeChanged FINAL)
+    Q_PROPERTY(int notificationsHistoryLimit READ notificationsHistoryLimit NOTIFY notificationsHistoryLimitChanged FINAL)
+
+    Q_PROPERTY(QString captureScreenshotFormat READ captureScreenshotFormat NOTIFY captureScreenshotFormatChanged FINAL)
+    Q_PROPERTY(QString captureVideoFormat READ captureVideoFormat NOTIFY captureVideoFormatChanged FINAL)
+    Q_PROPERTY(QString captureScreenshotNamePattern READ captureScreenshotNamePattern NOTIFY captureScreenshotNamePatternChanged FINAL)
+    Q_PROPERTY(QString captureVideoNamePattern READ captureVideoNamePattern NOTIFY captureVideoNamePatternChanged FINAL)
+
+    Q_PROPERTY(bool shellAutostartEnabled READ shellAutostartEnabled NOTIFY shellAutostartEnabledChanged FINAL)
+    Q_PROPERTY(QString islandMonitorMode READ islandMonitorMode NOTIFY islandMonitorModeChanged FINAL)
+    Q_PROPERTY(QString islandMonitorName READ islandMonitorName NOTIFY islandMonitorNameChanged FINAL)
+    Q_PROPERTY(QString statusBarMonitorMode READ statusBarMonitorMode NOTIFY statusBarMonitorModeChanged FINAL)
+    Q_PROPERTY(QString statusBarMonitorName READ statusBarMonitorName NOTIFY statusBarMonitorNameChanged FINAL)
+
 public:
     explicit UserConfigBackend(QObject *parent = nullptr);
 
@@ -222,6 +276,51 @@ public:
     bool captureNotify() const;
     bool captureShowScreenshotPreview() const;
     int captureScreenshotPreviewSeconds() const;
+    QString motionPreset() const;
+    int motionShapeSpring() const;
+    int motionShapeDamping() const;
+    int motionRadiusSpring() const;
+    int motionRadiusDamping() const;
+    int motionContentRevealDuration() const;
+    int motionPressScale() const;
+    int motionPulseScale() const;
+    int motionLongPressMs() const;
+    bool motionIdleBreathEnabled() const;
+    QString idleStyle() const;
+    bool idleShowUsageRings() const;
+    int idleDotSize() const;
+    int idleDotOpacity() const;
+    const QVariantList &liveActivityPriority() const;
+    int transientNotificationMs() const;
+    int transientShotMs() const;
+    int transientBannerMs() const;
+    int transientHudMs() const;
+    int transientClockMs() const;
+    bool notificationAutoExpand() const;
+    const QVariantList &controlCenterModules() const;
+    bool controlCenterShowVolume() const;
+    bool controlCenterShowBrightness() const;
+    const QVariantList &mediaExcludedPlayers() const;
+    const QVariantList &mediaPreferredPlayers() const;
+    int clipboardHistoryLimit() const;
+    const QVariantList &clipboardExcludedApps() const;
+    bool clipboardShowImagePreviews() const;
+    const QVariantList &notificationsBlockedApps() const;
+    const QVariantList &notificationsAllowedApps() const;
+    bool doNotDisturbEnabled() const;
+    bool dndScheduleEnabled() const;
+    QString dndStartTime() const;
+    QString dndEndTime() const;
+    int notificationsHistoryLimit() const;
+    QString captureScreenshotFormat() const;
+    QString captureVideoFormat() const;
+    QString captureScreenshotNamePattern() const;
+    QString captureVideoNamePattern() const;
+    bool shellAutostartEnabled() const;
+    QString islandMonitorMode() const;
+    QString islandMonitorName() const;
+    QString statusBarMonitorMode() const;
+    QString statusBarMonitorName() const;
     void setDefaultWallpaperPath(const QString &path);
     void setDefaultTlpSudoPassword(const QString &password);
 
@@ -330,6 +429,51 @@ signals:
     void captureNotifyChanged();
     void captureShowScreenshotPreviewChanged();
     void captureScreenshotPreviewSecondsChanged();
+    void motionPresetChanged();
+    void motionShapeSpringChanged();
+    void motionShapeDampingChanged();
+    void motionRadiusSpringChanged();
+    void motionRadiusDampingChanged();
+    void motionContentRevealDurationChanged();
+    void motionPressScaleChanged();
+    void motionPulseScaleChanged();
+    void motionLongPressMsChanged();
+    void motionIdleBreathEnabledChanged();
+    void idleStyleChanged();
+    void idleShowUsageRingsChanged();
+    void idleDotSizeChanged();
+    void idleDotOpacityChanged();
+    void liveActivityPriorityChanged();
+    void transientNotificationMsChanged();
+    void transientShotMsChanged();
+    void transientBannerMsChanged();
+    void transientHudMsChanged();
+    void transientClockMsChanged();
+    void notificationAutoExpandChanged();
+    void controlCenterModulesChanged();
+    void controlCenterShowVolumeChanged();
+    void controlCenterShowBrightnessChanged();
+    void mediaExcludedPlayersChanged();
+    void mediaPreferredPlayersChanged();
+    void clipboardHistoryLimitChanged();
+    void clipboardExcludedAppsChanged();
+    void clipboardShowImagePreviewsChanged();
+    void notificationsBlockedAppsChanged();
+    void notificationsAllowedAppsChanged();
+    void doNotDisturbEnabledChanged();
+    void dndScheduleEnabledChanged();
+    void dndStartTimeChanged();
+    void dndEndTimeChanged();
+    void notificationsHistoryLimitChanged();
+    void captureScreenshotFormatChanged();
+    void captureVideoFormatChanged();
+    void captureScreenshotNamePatternChanged();
+    void captureVideoNamePatternChanged();
+    void shellAutostartEnabledChanged();
+    void islandMonitorModeChanged();
+    void islandMonitorNameChanged();
+    void statusBarMonitorModeChanged();
+    void statusBarMonitorNameChanged();
 
 private:
     void scheduleReload();
@@ -438,6 +582,51 @@ private:
     bool m_captureNotify = true;
     bool m_captureShowScreenshotPreview = true;
     int m_captureScreenshotPreviewSeconds = 6;
+    QString m_motionPreset = QStringLiteral("default");
+    int m_motionShapeSpring = 36;
+    int m_motionShapeDamping = 42;
+    int m_motionRadiusSpring = 42;
+    int m_motionRadiusDamping = 75;
+    int m_motionContentRevealDuration = 200;
+    int m_motionPressScale = 97;
+    int m_motionPulseScale = 105;
+    int m_motionLongPressMs = 420;
+    bool m_motionIdleBreathEnabled = true;
+    QString m_idleStyle = QStringLiteral("dot");
+    bool m_idleShowUsageRings = false;
+    int m_idleDotSize = 6;
+    int m_idleDotOpacity = 25;
+    QVariantList m_liveActivityPriority;
+    int m_transientNotificationMs = 6000;
+    int m_transientShotMs = 6000;
+    int m_transientBannerMs = 5000;
+    int m_transientHudMs = 2200;
+    int m_transientClockMs = 2600;
+    bool m_notificationAutoExpand = true;
+    QVariantList m_controlCenterModules;
+    bool m_controlCenterShowVolume = true;
+    bool m_controlCenterShowBrightness = true;
+    QVariantList m_mediaExcludedPlayers;
+    QVariantList m_mediaPreferredPlayers;
+    int m_clipboardHistoryLimit = 50;
+    QVariantList m_clipboardExcludedApps;
+    bool m_clipboardShowImagePreviews = true;
+    QVariantList m_notificationsBlockedApps;
+    QVariantList m_notificationsAllowedApps;
+    bool m_doNotDisturbEnabled = false;
+    bool m_dndScheduleEnabled = false;
+    QString m_dndStartTime = QStringLiteral("22:00");
+    QString m_dndEndTime = QStringLiteral("08:00");
+    int m_notificationsHistoryLimit = 30;
+    QString m_captureScreenshotFormat = QStringLiteral("png");
+    QString m_captureVideoFormat = QStringLiteral("mp4");
+    QString m_captureScreenshotNamePattern = QStringLiteral("Screenshot_%Y-%m-%d_%H-%M-%S");
+    QString m_captureVideoNamePattern = QStringLiteral("Recording_%Y-%m-%d_%H-%M-%S");
+    bool m_shellAutostartEnabled = false;
+    QString m_islandMonitorMode = QStringLiteral("all");
+    QString m_islandMonitorName;
+    QString m_statusBarMonitorMode = QStringLiteral("all");
+    QString m_statusBarMonitorName;
 
     QFileSystemWatcher m_watcher;
     QTimer m_reloadTimer;

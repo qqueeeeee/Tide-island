@@ -79,6 +79,11 @@ PanelWindow {
     property real brightnessValue: 0
 
     // --- Resolved activity --------------------------------------------------
+    readonly property var liveActivityState: ({
+        recording: root.recordingLive,
+        media: root.mediaLive
+    })
+
     readonly property string activity: {
         if (root.panelActivity !== "")
             return root.panelActivity;
@@ -86,10 +91,12 @@ PanelWindow {
             return root.transientActivity;
         if (root.controlCentreOpen)
             return "control";
-        if (root.recordingLive)
-            return "recording";
-        if (root.mediaLive)
-            return "media";
+        const priority = userConfig.liveActivityPriority || [];
+        for (let index = 0; index < priority.length; index++) {
+            const id = String(priority[index]);
+            if (root.liveActivityState[id])
+                return id;
+        }
         return "idle";
     }
 
@@ -138,7 +145,7 @@ PanelWindow {
         case "clock":
             return tokens.clockCompact;
         default:
-            return tokens.idleCompact;
+            return userConfig.idleStyle === "clock" ? tokens.clockCompact : tokens.idleCompact;
         }
     }
 
@@ -146,16 +153,16 @@ PanelWindow {
     readonly property int dismissMs: {
         switch (root.transientActivity) {
         case "notification":
-            return 6000;
+            return userConfig.transientNotificationMs;
         case "shot":
-            return 6000;
+            return userConfig.transientShotMs;
         case "banner":
-            return 5000;
+            return userConfig.transientBannerMs;
         case "volume":
         case "brightness":
-            return 2200;
+            return userConfig.transientHudMs;
         case "clock":
-            return 2600;
+            return userConfig.transientClockMs;
         default:
             return 0;
         }
@@ -211,7 +218,7 @@ PanelWindow {
         // Transients open expanded (they carry content and actions); live
         // activities stay compact until touched, exactly like iOS.
         root.expanded = root.activity === "shot"
-            || root.activity === "notification"
+            || (root.activity === "notification" && userConfig.notificationAutoExpand)
             || root.activity === "control"
             || root.keyboardPanel;
         pressTimer.stop();
@@ -442,7 +449,11 @@ PanelWindow {
             Loader {
                 anchors.fill: parent
                 active: root.activity === "idle"
-                sourceComponent: IdleLayer { showCondition: true }
+                sourceComponent: IdleLayer {
+                    showCondition: true
+                    textFontFamily: root.textFontFamily
+                    heroFontFamily: root.heroFontFamily
+                }
             }
 
             Loader {

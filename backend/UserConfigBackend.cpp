@@ -20,6 +20,16 @@ QVariantList defaultDynamicIslandLeftSwipeItems()
     return {QStringLiteral("cava"), QStringLiteral("battery")};
 }
 
+QVariantList defaultLiveActivityPriority()
+{
+    return {QStringLiteral("recording"), QStringLiteral("media")};
+}
+
+QVariantList defaultControlCenterModules()
+{
+    return {QStringLiteral("wifi"), QStringLiteral("bluetooth"), QStringLiteral("mic"), QStringLiteral("nightlight")};
+}
+
 QByteArray stripJsonComments(const QByteArray &input)
 {
     QString text = QString::fromUtf8(input);
@@ -88,6 +98,43 @@ bool jsonBool(const QJsonObject &object, QLatin1String key, bool fallback)
 {
     const QJsonValue value = object.value(key);
     return value.isBool() ? value.toBool() : fallback;
+}
+
+QVariantList jsonStringList(const QJsonObject &object, QLatin1String key, const QVariantList &fallback)
+{
+    const QJsonValue value = object.value(key);
+    if (value.isArray()) {
+        QVariantList result;
+        const QJsonArray array = value.toArray();
+        for (const QJsonValue &item : array) {
+            if (item.isString())
+                result.append(item.toString());
+        }
+        return result;
+    }
+
+    if (value.isString()) {
+        const QString text = value.toString();
+        if (text.trimmed().isEmpty())
+            return fallback;
+
+        QVariantList result;
+        const QStringList parts = text.split(u',', Qt::SkipEmptyParts);
+        for (const QString &part : parts) {
+            const QString trimmed = part.trimmed();
+            if (!trimmed.isEmpty())
+                result.append(trimmed);
+        }
+        return result.isEmpty() ? fallback : result;
+    }
+
+    return fallback;
+}
+
+QString jsonEnum(const QJsonObject &object, QLatin1String key, const QString &fallback, const QSet<QString> &allowed)
+{
+    const QString value = jsonString(object, key, fallback);
+    return allowed.contains(value) ? value : fallback;
 }
 
 template<typename Owner, typename T, typename Signal>
@@ -606,6 +653,231 @@ int UserConfigBackend::captureScreenshotPreviewSeconds() const
     return m_captureScreenshotPreviewSeconds;
 }
 
+QString UserConfigBackend::motionPreset() const
+{
+    return m_motionPreset;
+}
+
+int UserConfigBackend::motionShapeSpring() const
+{
+    return m_motionShapeSpring;
+}
+
+int UserConfigBackend::motionShapeDamping() const
+{
+    return m_motionShapeDamping;
+}
+
+int UserConfigBackend::motionRadiusSpring() const
+{
+    return m_motionRadiusSpring;
+}
+
+int UserConfigBackend::motionRadiusDamping() const
+{
+    return m_motionRadiusDamping;
+}
+
+int UserConfigBackend::motionContentRevealDuration() const
+{
+    return m_motionContentRevealDuration;
+}
+
+int UserConfigBackend::motionPressScale() const
+{
+    return m_motionPressScale;
+}
+
+int UserConfigBackend::motionPulseScale() const
+{
+    return m_motionPulseScale;
+}
+
+int UserConfigBackend::motionLongPressMs() const
+{
+    return m_motionLongPressMs;
+}
+
+bool UserConfigBackend::motionIdleBreathEnabled() const
+{
+    return m_motionIdleBreathEnabled;
+}
+
+QString UserConfigBackend::idleStyle() const
+{
+    return m_idleStyle;
+}
+
+bool UserConfigBackend::idleShowUsageRings() const
+{
+    return m_idleShowUsageRings;
+}
+
+int UserConfigBackend::idleDotSize() const
+{
+    return m_idleDotSize;
+}
+
+int UserConfigBackend::idleDotOpacity() const
+{
+    return m_idleDotOpacity;
+}
+
+const QVariantList &UserConfigBackend::liveActivityPriority() const
+{
+    return m_liveActivityPriority;
+}
+
+int UserConfigBackend::transientNotificationMs() const
+{
+    return m_transientNotificationMs;
+}
+
+int UserConfigBackend::transientShotMs() const
+{
+    return m_transientShotMs;
+}
+
+int UserConfigBackend::transientBannerMs() const
+{
+    return m_transientBannerMs;
+}
+
+int UserConfigBackend::transientHudMs() const
+{
+    return m_transientHudMs;
+}
+
+int UserConfigBackend::transientClockMs() const
+{
+    return m_transientClockMs;
+}
+
+bool UserConfigBackend::notificationAutoExpand() const
+{
+    return m_notificationAutoExpand;
+}
+
+const QVariantList &UserConfigBackend::controlCenterModules() const
+{
+    return m_controlCenterModules;
+}
+
+bool UserConfigBackend::controlCenterShowVolume() const
+{
+    return m_controlCenterShowVolume;
+}
+
+bool UserConfigBackend::controlCenterShowBrightness() const
+{
+    return m_controlCenterShowBrightness;
+}
+
+const QVariantList &UserConfigBackend::mediaExcludedPlayers() const
+{
+    return m_mediaExcludedPlayers;
+}
+
+const QVariantList &UserConfigBackend::mediaPreferredPlayers() const
+{
+    return m_mediaPreferredPlayers;
+}
+
+int UserConfigBackend::clipboardHistoryLimit() const
+{
+    return m_clipboardHistoryLimit;
+}
+
+const QVariantList &UserConfigBackend::clipboardExcludedApps() const
+{
+    return m_clipboardExcludedApps;
+}
+
+bool UserConfigBackend::clipboardShowImagePreviews() const
+{
+    return m_clipboardShowImagePreviews;
+}
+
+const QVariantList &UserConfigBackend::notificationsBlockedApps() const
+{
+    return m_notificationsBlockedApps;
+}
+
+const QVariantList &UserConfigBackend::notificationsAllowedApps() const
+{
+    return m_notificationsAllowedApps;
+}
+
+bool UserConfigBackend::doNotDisturbEnabled() const
+{
+    return m_doNotDisturbEnabled;
+}
+
+bool UserConfigBackend::dndScheduleEnabled() const
+{
+    return m_dndScheduleEnabled;
+}
+
+QString UserConfigBackend::dndStartTime() const
+{
+    return m_dndStartTime;
+}
+
+QString UserConfigBackend::dndEndTime() const
+{
+    return m_dndEndTime;
+}
+
+int UserConfigBackend::notificationsHistoryLimit() const
+{
+    return m_notificationsHistoryLimit;
+}
+
+QString UserConfigBackend::captureScreenshotFormat() const
+{
+    return m_captureScreenshotFormat;
+}
+
+QString UserConfigBackend::captureVideoFormat() const
+{
+    return m_captureVideoFormat;
+}
+
+QString UserConfigBackend::captureScreenshotNamePattern() const
+{
+    return m_captureScreenshotNamePattern;
+}
+
+QString UserConfigBackend::captureVideoNamePattern() const
+{
+    return m_captureVideoNamePattern;
+}
+
+bool UserConfigBackend::shellAutostartEnabled() const
+{
+    return m_shellAutostartEnabled;
+}
+
+QString UserConfigBackend::islandMonitorMode() const
+{
+    return m_islandMonitorMode;
+}
+
+QString UserConfigBackend::islandMonitorName() const
+{
+    return m_islandMonitorName;
+}
+
+QString UserConfigBackend::statusBarMonitorMode() const
+{
+    return m_statusBarMonitorMode;
+}
+
+QString UserConfigBackend::statusBarMonitorName() const
+{
+    return m_statusBarMonitorName;
+}
+
 int UserConfigBackend::bodyFontSize() const
 {
     return m_bodyFontSize;
@@ -819,6 +1091,60 @@ void UserConfigBackend::loadConfig()
     updateField(this, m_captureNotify, jsonBool(configObject, QLatin1String("captureNotify"), true), &UserConfigBackend::captureNotifyChanged);
     updateField(this, m_captureShowScreenshotPreview, jsonBool(configObject, QLatin1String("captureShowScreenshotPreview"), true), &UserConfigBackend::captureShowScreenshotPreviewChanged);
     updateField(this, m_captureScreenshotPreviewSeconds, jsonBoundedInt(configObject, QLatin1String("captureScreenshotPreviewSeconds"), 6, 2, 60), &UserConfigBackend::captureScreenshotPreviewSecondsChanged);
+
+    updateField(this, m_motionPreset, jsonEnum(configObject, QLatin1String("motionPreset"), QStringLiteral("default"), {QStringLiteral("default"), QStringLiteral("snappy"), QStringLiteral("bouncy"), QStringLiteral("custom")}), &UserConfigBackend::motionPresetChanged);
+    updateField(this, m_motionShapeSpring, jsonBoundedInt(configObject, QLatin1String("motionShapeSpring"), 36, 10, 120), &UserConfigBackend::motionShapeSpringChanged);
+    updateField(this, m_motionShapeDamping, jsonBoundedInt(configObject, QLatin1String("motionShapeDamping"), 42, 10, 100), &UserConfigBackend::motionShapeDampingChanged);
+    updateField(this, m_motionRadiusSpring, jsonBoundedInt(configObject, QLatin1String("motionRadiusSpring"), 42, 10, 120), &UserConfigBackend::motionRadiusSpringChanged);
+    updateField(this, m_motionRadiusDamping, jsonBoundedInt(configObject, QLatin1String("motionRadiusDamping"), 75, 10, 100), &UserConfigBackend::motionRadiusDampingChanged);
+    updateField(this, m_motionContentRevealDuration, jsonBoundedInt(configObject, QLatin1String("motionContentRevealDuration"), 200, 60, 600), &UserConfigBackend::motionContentRevealDurationChanged);
+    updateField(this, m_motionPressScale, jsonBoundedInt(configObject, QLatin1String("motionPressScale"), 97, 85, 100), &UserConfigBackend::motionPressScaleChanged);
+    updateField(this, m_motionPulseScale, jsonBoundedInt(configObject, QLatin1String("motionPulseScale"), 105, 100, 125), &UserConfigBackend::motionPulseScaleChanged);
+    updateField(this, m_motionLongPressMs, jsonBoundedInt(configObject, QLatin1String("motionLongPressMs"), 420, 150, 1200), &UserConfigBackend::motionLongPressMsChanged);
+    updateField(this, m_motionIdleBreathEnabled, jsonBool(configObject, QLatin1String("motionIdleBreathEnabled"), true), &UserConfigBackend::motionIdleBreathEnabledChanged);
+
+    updateField(this, m_idleStyle, jsonEnum(configObject, QLatin1String("idleStyle"), QStringLiteral("dot"), {QStringLiteral("dot"), QStringLiteral("orb"), QStringLiteral("clock"), QStringLiteral("blank")}), &UserConfigBackend::idleStyleChanged);
+    updateField(this, m_idleShowUsageRings, jsonBool(configObject, QLatin1String("idleShowUsageRings"), false), &UserConfigBackend::idleShowUsageRingsChanged);
+    updateField(this, m_idleDotSize, jsonBoundedInt(configObject, QLatin1String("idleDotSize"), 6, 2, 16), &UserConfigBackend::idleDotSizeChanged);
+    updateField(this, m_idleDotOpacity, jsonBoundedInt(configObject, QLatin1String("idleDotOpacity"), 25, 5, 100), &UserConfigBackend::idleDotOpacityChanged);
+
+    updateField(this, m_liveActivityPriority, jsonStringList(configObject, QLatin1String("liveActivityPriority"), defaultLiveActivityPriority()), &UserConfigBackend::liveActivityPriorityChanged);
+    updateField(this, m_transientNotificationMs, jsonBoundedInt(configObject, QLatin1String("transientNotificationMs"), 6000, 0, 30000), &UserConfigBackend::transientNotificationMsChanged);
+    updateField(this, m_transientShotMs, jsonBoundedInt(configObject, QLatin1String("transientShotMs"), 6000, 0, 30000), &UserConfigBackend::transientShotMsChanged);
+    updateField(this, m_transientBannerMs, jsonBoundedInt(configObject, QLatin1String("transientBannerMs"), 5000, 0, 30000), &UserConfigBackend::transientBannerMsChanged);
+    updateField(this, m_transientHudMs, jsonBoundedInt(configObject, QLatin1String("transientHudMs"), 2200, 0, 30000), &UserConfigBackend::transientHudMsChanged);
+    updateField(this, m_transientClockMs, jsonBoundedInt(configObject, QLatin1String("transientClockMs"), 2600, 0, 30000), &UserConfigBackend::transientClockMsChanged);
+    updateField(this, m_notificationAutoExpand, jsonBool(configObject, QLatin1String("notificationAutoExpand"), true), &UserConfigBackend::notificationAutoExpandChanged);
+
+    updateField(this, m_controlCenterModules, jsonStringList(configObject, QLatin1String("controlCenterModules"), defaultControlCenterModules()), &UserConfigBackend::controlCenterModulesChanged);
+    updateField(this, m_controlCenterShowVolume, jsonBool(configObject, QLatin1String("controlCenterShowVolume"), true), &UserConfigBackend::controlCenterShowVolumeChanged);
+    updateField(this, m_controlCenterShowBrightness, jsonBool(configObject, QLatin1String("controlCenterShowBrightness"), true), &UserConfigBackend::controlCenterShowBrightnessChanged);
+
+    updateField(this, m_mediaExcludedPlayers, jsonStringList(configObject, QLatin1String("mediaExcludedPlayers"), QVariantList()), &UserConfigBackend::mediaExcludedPlayersChanged);
+    updateField(this, m_mediaPreferredPlayers, jsonStringList(configObject, QLatin1String("mediaPreferredPlayers"), QVariantList()), &UserConfigBackend::mediaPreferredPlayersChanged);
+
+    updateField(this, m_clipboardHistoryLimit, jsonBoundedInt(configObject, QLatin1String("clipboardHistoryLimit"), 50, 5, 500), &UserConfigBackend::clipboardHistoryLimitChanged);
+    updateField(this, m_clipboardExcludedApps, jsonStringList(configObject, QLatin1String("clipboardExcludedApps"), QVariantList()), &UserConfigBackend::clipboardExcludedAppsChanged);
+    updateField(this, m_clipboardShowImagePreviews, jsonBool(configObject, QLatin1String("clipboardShowImagePreviews"), true), &UserConfigBackend::clipboardShowImagePreviewsChanged);
+
+    updateField(this, m_notificationsBlockedApps, jsonStringList(configObject, QLatin1String("notificationsBlockedApps"), QVariantList()), &UserConfigBackend::notificationsBlockedAppsChanged);
+    updateField(this, m_notificationsAllowedApps, jsonStringList(configObject, QLatin1String("notificationsAllowedApps"), QVariantList()), &UserConfigBackend::notificationsAllowedAppsChanged);
+    updateField(this, m_doNotDisturbEnabled, jsonBool(configObject, QLatin1String("doNotDisturbEnabled"), false), &UserConfigBackend::doNotDisturbEnabledChanged);
+    updateField(this, m_dndScheduleEnabled, jsonBool(configObject, QLatin1String("dndScheduleEnabled"), false), &UserConfigBackend::dndScheduleEnabledChanged);
+    updateField(this, m_dndStartTime, jsonString(configObject, QLatin1String("dndStartTime"), QStringLiteral("22:00")), &UserConfigBackend::dndStartTimeChanged);
+    updateField(this, m_dndEndTime, jsonString(configObject, QLatin1String("dndEndTime"), QStringLiteral("08:00")), &UserConfigBackend::dndEndTimeChanged);
+    updateField(this, m_notificationsHistoryLimit, jsonBoundedInt(configObject, QLatin1String("notificationsHistoryLimit"), 30, 5, 200), &UserConfigBackend::notificationsHistoryLimitChanged);
+
+    updateField(this, m_captureScreenshotFormat, jsonEnum(configObject, QLatin1String("captureScreenshotFormat"), QStringLiteral("png"), {QStringLiteral("png"), QStringLiteral("jpg")}), &UserConfigBackend::captureScreenshotFormatChanged);
+    updateField(this, m_captureVideoFormat, jsonEnum(configObject, QLatin1String("captureVideoFormat"), QStringLiteral("mp4"), {QStringLiteral("mp4"), QStringLiteral("mkv"), QStringLiteral("webm")}), &UserConfigBackend::captureVideoFormatChanged);
+    updateField(this, m_captureScreenshotNamePattern, jsonString(configObject, QLatin1String("captureScreenshotNamePattern"), QStringLiteral("Screenshot_%Y-%m-%d_%H-%M-%S")), &UserConfigBackend::captureScreenshotNamePatternChanged);
+    updateField(this, m_captureVideoNamePattern, jsonString(configObject, QLatin1String("captureVideoNamePattern"), QStringLiteral("Recording_%Y-%m-%d_%H-%M-%S")), &UserConfigBackend::captureVideoNamePatternChanged);
+
+    updateField(this, m_shellAutostartEnabled, jsonBool(configObject, QLatin1String("shellAutostartEnabled"), false), &UserConfigBackend::shellAutostartEnabledChanged);
+    updateField(this, m_islandMonitorMode, jsonEnum(configObject, QLatin1String("islandMonitorMode"), QStringLiteral("all"), {QStringLiteral("all"), QStringLiteral("primary"), QStringLiteral("named")}), &UserConfigBackend::islandMonitorModeChanged);
+    updateField(this, m_islandMonitorName, jsonString(configObject, QLatin1String("islandMonitorName"), QString()), &UserConfigBackend::islandMonitorNameChanged);
+    updateField(this, m_statusBarMonitorMode, jsonEnum(configObject, QLatin1String("statusBarMonitorMode"), QStringLiteral("all"), {QStringLiteral("all"), QStringLiteral("primary"), QStringLiteral("named")}), &UserConfigBackend::statusBarMonitorModeChanged);
+    updateField(this, m_statusBarMonitorName, jsonString(configObject, QLatin1String("statusBarMonitorName"), QString()), &UserConfigBackend::statusBarMonitorNameChanged);
 
     updateWatchedPaths();
 }

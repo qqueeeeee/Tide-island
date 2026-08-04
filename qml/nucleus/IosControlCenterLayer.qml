@@ -42,6 +42,54 @@ Item {
     property bool micMuted: false
     property bool nightLightEnabled: false
 
+    // --- Toggle row model, built from controlCenterModules order --------
+    function moduleDefinition(key) {
+        switch (key) {
+        case "wifi":
+            return {
+                key: "wifi",
+                glyph: tokens.glyphWifi,
+                label: root.wifiEnabled ? root.wifiSsid : "Wi-Fi",
+                active: root.wifiEnabled
+            };
+        case "bluetooth":
+            return {
+                key: "bluetooth",
+                glyph: tokens.glyphBluetooth,
+                label: "Bluetooth",
+                active: root.bluetoothEnabled
+            };
+        case "mic":
+            return {
+                key: "mic",
+                glyph: root.micMuted ? tokens.glyphMicOff : tokens.glyphMic,
+                label: root.micMuted ? "Mic Muted" : "Mic",
+                active: root.micMuted
+            };
+        case "nightlight":
+            return {
+                key: "nightlight",
+                glyph: tokens.glyphMoon,
+                label: "Night Light",
+                active: root.nightLightEnabled
+            };
+        default:
+            return null;
+        }
+    }
+
+    readonly property var toggleModel: {
+        const configured = root.userConfig.controlCenterModules || [];
+        const resolved = [];
+        for (let index = 0; index < configured.length; index++) {
+            const definition = root.moduleDefinition(String(configured[index]));
+            if (definition)
+                resolved.push(definition);
+        }
+        resolved.push({ key: "settings", glyph: tokens.glyphGear, label: "Settings", active: false });
+        return resolved;
+    }
+
     property real volumeValue: 0
     property real brightnessValue: 0
 
@@ -139,41 +187,11 @@ Item {
             anchors.top: parent.top
             spacing: 8
 
-            readonly property real cellWidth: (width - spacing * 4) / 5
+            readonly property int cellCount: Math.max(1, root.toggleModel.length)
+            readonly property real cellWidth: (width - spacing * (toggleRow.cellCount - 1)) / toggleRow.cellCount
 
             Repeater {
-                model: [
-                    {
-                        key: "wifi",
-                        glyph: tokens.glyphWifi,
-                        label: root.wifiEnabled ? root.wifiSsid : "Wi-Fi",
-                        active: root.wifiEnabled
-                    },
-                    {
-                        key: "bluetooth",
-                        glyph: tokens.glyphBluetooth,
-                        label: "Bluetooth",
-                        active: root.bluetoothEnabled
-                    },
-                    {
-                        key: "mic",
-                        glyph: root.micMuted ? tokens.glyphMicOff : tokens.glyphMic,
-                        label: root.micMuted ? "Mic Muted" : "Mic",
-                        active: root.micMuted
-                    },
-                    {
-                        key: "night",
-                        glyph: tokens.glyphMoon,
-                        label: "Night Light",
-                        active: root.nightLightEnabled
-                    },
-                    {
-                        key: "settings",
-                        glyph: tokens.glyphGear,
-                        label: "Settings",
-                        active: false
-                    }
-                ]
+                model: root.toggleModel
 
                 delegate: Column {
                     id: toggleCell
@@ -216,6 +234,8 @@ Item {
 
             IslandCapsuleSlider {
                 width: parent.width
+                visible: root.userConfig.controlCenterShowVolume
+                height: visible ? implicitHeight : 0
                 value: root.volumeValue
                 glyph: root.volumeValue > 0.5 ? tokens.glyphVolume : tokens.glyphVolumeLow
                 iconFontFamily: root.iconFontFamily
@@ -232,6 +252,8 @@ Item {
 
             IslandCapsuleSlider {
                 width: parent.width
+                visible: root.userConfig.controlCenterShowBrightness
+                height: visible ? implicitHeight : 0
                 value: root.brightnessValue
                 glyph: tokens.glyphSun
                 iconFontFamily: root.iconFontFamily
@@ -260,7 +282,7 @@ Item {
             if (root.bluetoothAdapter) root.bluetoothAdapter.enabled = !root.bluetoothEnabled;
         } else if (key === "mic") {
             micToggleProcess.running = true;
-        } else if (key === "night") {
+        } else if (key === "nightlight") {
             root.nightLightEnabled = !root.nightLightEnabled;
             nightLightProcess.enable = root.nightLightEnabled;
             nightLightProcess.running = true;

@@ -63,6 +63,10 @@ public:
     Q_INVOKABLE QVariantList applicationLauncherFavoriteEntries() const;
     Q_INVOKABLE bool saveApplicationLauncherFavorites(const QVariantList &favoriteIds);
     Q_INVOKABLE bool toggleApplicationLauncher();
+    Q_INVOKABLE bool autostartAvailable() const;
+    Q_INVOKABLE bool autostartEnabled() const;
+    Q_INVOKABLE bool setAutostartEnabled(bool enabled);
+    Q_INVOKABLE QString autostartSummary() const;
 
 signals:
     void errorStringChanged();

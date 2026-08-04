@@ -1,8 +1,10 @@
 import QtQuick
-import QtQuick.Controls.Basic
 import TideIsland 1.0
 
-// Label + live value + Apple-style track.
+// Label + live value + island capsule slider (tall pill, glyph, spring fill).
+// API kept identical to the previous UiSlider: label/hint/configKey/from/to/
+// stepSize/suffix. Optional `glyph` adds a leading icon like the island's
+// control-centre sliders.
 Item {
     id: root
 
@@ -13,8 +15,28 @@ Item {
     property int to: 100
     property int stepSize: 1
     property string suffix: " px"
+    property string glyph: ""
 
-    readonly property int currentValue: root.configKey === "" ? slider.value : ConfigStore.number(root.configKey)
+    readonly property int currentValue: root.configKey === "" ? internalValue : ConfigStore.number(root.configKey)
+    property int internalValue: root.from
+    readonly property real ratio: (root.to === root.from) ? 0 : (root.currentValue - root.from) / (root.to - root.from)
+
+    signal moved(int value)
+
+    function valueFromRatio(r) {
+        const span = root.to - root.from;
+        const raw = root.from + r * span;
+        const stepped = Math.round(raw / root.stepSize) * root.stepSize;
+        return Math.max(root.from, Math.min(root.to, stepped));
+    }
+
+    function apply(next) {
+        if (root.configKey !== "")
+            ConfigStore.set(root.configKey, next);
+        else
+            root.internalValue = next;
+        root.moved(next);
+    }
 
     width: parent ? parent.width : 0
     implicitHeight: column.implicitHeight + 14
@@ -25,11 +47,12 @@ Item {
 
         y: 7
         width: parent.width
-        spacing: 4
+        spacing: 6
 
         Item {
             width: parent.width
             height: 18
+            visible: root.label !== ""
 
             Text {
                 anchors.left: parent.left
@@ -37,7 +60,7 @@ Item {
                 text: root.label
                 color: AppTheme.text
                 font.family: AppTheme.fontFamily
-                font.pixelSize: 13
+                font.pixelSize: AppTheme.fontSizeBody
             }
 
             Text {
@@ -46,56 +69,75 @@ Item {
                 text: root.currentValue + root.suffix
                 color: AppTheme.textDim
                 font.family: AppTheme.fontFamily
-                font.pixelSize: 12
+                font.pixelSize: AppTheme.fontSizeCaption
             }
         }
 
-        Slider {
-            id: slider
+        Item {
+            id: capsule
 
             width: parent.width
-            height: 22
-            from: root.from
-            to: root.to
-            stepSize: root.stepSize
-            snapMode: Slider.SnapAlways
-            value: root.currentValue
+            height: 30
 
-            onMoved: {
-                if (root.configKey !== "")
-                    ConfigStore.set(root.configKey, Math.round(value));
-            }
+            Rectangle {
+                id: track
 
-            background: Rectangle {
-                x: 0
-                y: (slider.height - height) / 2
-                width: slider.width
-                height: 4
-                radius: 2
-                color: AppTheme.trackOff
+                anchors.fill: parent
+                radius: height / 2
+                color: AppTheme.chip
+                border.width: 1
+                border.color: AppTheme.glassBorder
+                clip: true
 
                 Rectangle {
-                    width: slider.visualPosition * parent.width
-                    height: parent.height
-                    radius: 2
-                    color: AppTheme.accent
+                    id: fill
+
+                    anchors.left: parent.left
+                    anchors.top: parent.top
+                    anchors.bottom: parent.bottom
+                    radius: height / 2
+                    width: Math.max(0, Math.min(1, root.ratio)) * track.width
+                    color: AppTheme.fillOnDark
+
+                    Behavior on width {
+                        SpringAnimation { spring: 4.2; damping: 0.62; mass: 1.0; epsilon: 0.25 }
+                    }
+                }
+
+                Text {
+                    visible: root.glyph !== ""
+                    anchors.left: parent.left
+                    anchors.leftMargin: 11
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: root.glyph
+                    font.family: AppTheme.iconFontFamily
+                    font.pixelSize: 14
+                    color: root.ratio > 0.14 ? AppTheme.onFill : AppTheme.textDim
+                }
+
+                Text {
+                    anchors.right: parent.right
+                    anchors.rightMargin: 11
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: Math.round(Math.max(0, Math.min(1, root.ratio)) * 100) + "%"
+                    font.family: AppTheme.fontFamily
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                    color: root.ratio > 0.86 ? AppTheme.onFill : AppTheme.textDim
                 }
             }
 
-            handle: Rectangle {
-                x: slider.visualPosition * (slider.width - width)
-                y: (slider.height - height) / 2
-                width: 16
-                height: 16
-                radius: 8
-                color: "#ffffff"
-                border.width: 1
-                border.color: AppTheme.dark ? "#00000055" : "#0000001a"
-                scale: slider.pressed ? 1.12 : 1
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                preventStealing: true
 
-                Behavior on scale {
-                    NumberAnimation { duration: 120; easing.type: Easing.OutCubic }
+                function ratioAt(mx) {
+                    return Math.max(0, Math.min(1, mx / Math.max(1, width)));
                 }
+
+                onPressed: (mouse) => root.apply(root.valueFromRatio(ratioAt(mouse.x)))
+                onPositionChanged: (mouse) => { if (pressed) root.apply(root.valueFromRatio(ratioAt(mouse.x))); }
             }
         }
 
@@ -106,7 +148,7 @@ Item {
             color: AppTheme.textFaint
             wrapMode: Text.WordWrap
             font.family: AppTheme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: AppTheme.fontSizeCaption
         }
     }
 }

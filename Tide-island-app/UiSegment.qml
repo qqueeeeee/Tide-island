@@ -1,7 +1,8 @@
 import QtQuick
 import TideIsland 1.0
 
-// Segmented control for small enumerations (12/24h, and friends).
+// Segmented control for small enumerations (12/24h, and friends). Restyled
+// with the island's chip/glass surfaces.
 Item {
     id: root
 
@@ -31,7 +32,7 @@ Item {
             text: root.label
             color: AppTheme.text
             font.family: AppTheme.fontFamily
-            font.pixelSize: 13
+            font.pixelSize: AppTheme.fontSizeBody
         }
 
         Text {
@@ -41,7 +42,7 @@ Item {
             color: AppTheme.textFaint
             wrapMode: Text.WordWrap
             font.family: AppTheme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: AppTheme.fontSizeCaption
         }
     }
 
@@ -50,10 +51,12 @@ Item {
 
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        height: 30
+        height: 32
         width: segments.implicitWidth + 6
-        radius: 9
-        color: AppTheme.trackOff
+        radius: AppTheme.radiusChip
+        color: AppTheme.chip
+        border.width: 1
+        border.color: AppTheme.glassBorder
 
         Row {
             id: segments
@@ -71,10 +74,10 @@ Item {
 
                     readonly property bool active: String(root.currentValue) === String(segment.modelData.value)
 
-                    height: 24
+                    height: 26
                     width: Math.max(60, segmentLabel.implicitWidth + 22)
-                    radius: 7
-                    color: segment.active ? AppTheme.cardBg : "transparent"
+                    radius: AppTheme.radiusChip - 4
+                    color: segment.active ? AppTheme.chipHover : "transparent"
 
                     Behavior on color { ColorAnimation { duration: AppTheme.animation } }
 
@@ -85,7 +88,7 @@ Item {
                         text: segment.modelData.label
                         color: segment.active ? AppTheme.text : AppTheme.textDim
                         font.family: AppTheme.fontFamily
-                        font.pixelSize: 12
+                        font.pixelSize: AppTheme.fontSizeCaption
                         font.weight: segment.active ? Font.DemiBold : Font.Normal
                     }
 

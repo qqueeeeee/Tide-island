@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell.Services.Mpris
+import IslandBackend
 
 // Minimal MPRIS bridge for the island. Only what the reference media layouts
 // need: title, artist, artwork, playing flag, position and transport calls.
@@ -12,9 +13,50 @@ Item {
     width: 0
     height: 0
 
+    readonly property var userConfig: UserConfig
+
     property var player: null
     property real position: 0
     property real length: 0
+
+    function normalizedList(raw) {
+        const list = raw || [];
+        const out = [];
+        for (let i = 0; i < list.length; i++)
+            out.push(String(list[i]).toLowerCase());
+        return out;
+    }
+
+    readonly property var excludedPlayers: root.normalizedList(userConfig.mediaExcludedPlayers)
+    readonly property var preferredPlayers: root.normalizedList(userConfig.mediaPreferredPlayers)
+
+    function playerIdentity(candidate) {
+        if (!candidate)
+            return "";
+        const identity = candidate.identity !== undefined ? candidate.identity : "";
+        const service = candidate.dbusName !== undefined ? candidate.dbusName : "";
+        return String(identity || service || "").toLowerCase();
+    }
+
+    function isExcluded(candidate) {
+        const identity = root.playerIdentity(candidate);
+        if (identity === "")
+            return false;
+        for (let i = 0; i < root.excludedPlayers.length; i++) {
+            if (identity.indexOf(root.excludedPlayers[i]) !== -1)
+                return true;
+        }
+        return false;
+    }
+
+    function preferenceRank(candidate) {
+        const identity = root.playerIdentity(candidate);
+        for (let i = 0; i < root.preferredPlayers.length; i++) {
+            if (identity.indexOf(root.preferredPlayers[i]) !== -1)
+                return i;
+        }
+        return root.preferredPlayers.length;
+    }
 
     readonly property var players: Mpris.players && Mpris.players.values !== undefined
         ? Mpris.players.values
@@ -55,20 +97,22 @@ Item {
     Component.onCompleted: root.pick()
 
     function pick() {
-        const list = root.players;
-        let fallback = null;
-        for (let index = 0; index < list.length; index++) {
-            const candidate = list[index];
-            if (!candidate)
-                continue;
-            if (!fallback)
-                fallback = candidate;
-            if (candidate.playbackState === MprisPlaybackState.Playing) {
-                root.player = candidate;
-                return;
-            }
+        const list = root.players.filter((candidate) => candidate && !root.isExcluded(candidate));
+
+        const playing = list.filter((candidate) => candidate.playbackState === MprisPlaybackState.Playing);
+        if (playing.length > 0) {
+            playing.sort((a, b) => root.preferenceRank(a) - root.preferenceRank(b));
+            root.player = playing[0];
+            return;
         }
-        root.player = fallback;
+
+        if (list.length === 0) {
+            root.player = null;
+            return;
+        }
+
+        const sorted = list.slice().sort((a, b) => root.preferenceRank(a) - root.preferenceRank(b));
+        root.player = sorted[0];
     }
 
     function formatClock(seconds) {

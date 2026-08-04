@@ -93,7 +93,61 @@ QtObject {
         "wallpaperTransitionDuration": 3,
         "wallpaperTransitionFps": 60,
         "wallpaperCustomCommandEnabled": false,
-        "wallpaperCustomCommand": ""
+        "wallpaperCustomCommand": "",
+        // Motion
+        "motionPreset": "default",
+        "motionShapeSpring": 36,
+        "motionShapeDamping": 42,
+        "motionRadiusSpring": 42,
+        "motionRadiusDamping": 75,
+        "motionContentRevealDuration": 200,
+        "motionPressScale": 97,
+        "motionPulseScale": 105,
+        "motionLongPressMs": 420,
+        "motionIdleBreathEnabled": true,
+        // Idle base state
+        "idleStyle": "dot",
+        "idleShowUsageRings": false,
+        "idleDotSize": 6,
+        "idleDotOpacity": 25,
+        // Live activities
+        "liveActivityPriority": ["recording", "media"],
+        "transientNotificationMs": 6000,
+        "transientShotMs": 6000,
+        "transientBannerMs": 5000,
+        "transientHudMs": 2200,
+        "transientClockMs": 2600,
+        "notificationAutoExpand": true,
+        // Control center
+        "controlCenterModules": ["wifi", "bluetooth", "mic", "nightlight"],
+        "controlCenterShowVolume": true,
+        "controlCenterShowBrightness": true,
+        // Media
+        "mediaExcludedPlayers": [],
+        "mediaPreferredPlayers": [],
+        // Clipboard
+        "clipboardHistoryLimit": 50,
+        "clipboardExcludedApps": [],
+        "clipboardShowImagePreviews": true,
+        // Notifications
+        "notificationsBlockedApps": [],
+        "notificationsAllowedApps": [],
+        "doNotDisturbEnabled": false,
+        "dndScheduleEnabled": false,
+        "dndStartTime": "22:00",
+        "dndEndTime": "08:00",
+        "notificationsHistoryLimit": 30,
+        // Capture (formats/naming)
+        "captureScreenshotFormat": "png",
+        "captureVideoFormat": "mp4",
+        "captureScreenshotNamePattern": "Screenshot_%Y-%m-%d_%H-%M-%S",
+        "captureVideoNamePattern": "Recording_%Y-%m-%d_%H-%M-%S",
+        // General / monitors
+        "shellAutostartEnabled": false,
+        "islandMonitorMode": "all",
+        "islandMonitorName": "",
+        "statusBarMonitorMode": "all",
+        "statusBarMonitorName": ""
     })
 
     property Timer writeTimer: Timer {
@@ -123,8 +177,23 @@ QtObject {
         return current === undefined ? "" : String(current);
     }
 
+    function list(key) {
+        const current = store.value(key);
+        if (Array.isArray(current))
+            return current.slice();
+        return [];
+    }
+
     function set(key, newValue) {
         const current = store.map[key];
+        if (Array.isArray(newValue)) {
+            if (Array.isArray(current) && JSON.stringify(current) === JSON.stringify(newValue))
+                return;
+            store.map[key] = newValue.slice();
+            store.revision++;
+            store.writeTimer.restart();
+            return;
+        }
         if (current === newValue)
             return;
         store.map[key] = newValue;

@@ -112,6 +112,14 @@ Column {
             minimum: 4
             maximum: 60
         }
+
+        UiNumberField {
+            label: "Background opacity"
+            configKey: "islandBackgroundOpacity"
+            minimum: 40
+            maximum: 100
+            suffix: "%"
+        }
     }
 
     Row {

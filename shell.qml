@@ -14,6 +14,30 @@ Scope {
     readonly property var userConfig: UserConfig
     readonly property var captureController: captureBackend
 
+    function screensForMode(mode, name) {
+        const all = Quickshell.screens;
+        if (mode === "primary") {
+            for (let i = 0; i < all.length; i++) {
+                if (all[i] && all[i].primary)
+                    return [all[i]];
+            }
+            return all.length > 0 ? [all[0]] : [];
+        }
+        if (mode === "named") {
+            const wanted = String(name === undefined || name === null ? "" : name).trim();
+            if (wanted === "")
+                return all;
+            const filtered = all.filter((screen) => screen && screen.name === wanted);
+            return filtered.length > 0 ? filtered : all;
+        }
+        return all;
+    }
+
+    readonly property var islandScreens: shellRoot.screensForMode(
+        userConfig.islandMonitorMode, userConfig.islandMonitorName)
+    readonly property var statusBarScreens: shellRoot.screensForMode(
+        userConfig.statusBarMonitorMode, userConfig.statusBarMonitorName)
+
     CaptureController {
         id: captureBackend
     }
@@ -271,7 +295,7 @@ Scope {
     Variants {
         id: islandVariants
 
-        model: Quickshell.screens
+        model: shellRoot.islandScreens
 
         Nucleus.NucleusIslandWindow {
             required property var modelData
@@ -289,7 +313,7 @@ Scope {
     Variants {
         id: barVariants
 
-        model: Quickshell.screens
+        model: shellRoot.statusBarScreens
 
         Nucleus.NucleusStatusBarWindow {
             required property var modelData

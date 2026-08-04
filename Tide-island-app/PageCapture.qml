@@ -34,6 +34,45 @@ Column {
 
     UiCard {
         width: parent.width
+        title: "Formats & naming"
+
+        UiSegment {
+            label: "Screenshot format"
+            configKey: "captureScreenshotFormat"
+            options: [
+                { label: "PNG", value: "png" },
+                { label: "JPG", value: "jpg" }
+            ]
+        }
+
+        UiSegment {
+            label: "Video format"
+            configKey: "captureVideoFormat"
+            options: [
+                { label: "MP4", value: "mp4" },
+                { label: "MKV", value: "mkv" },
+                { label: "WebM", value: "webm" }
+            ]
+        }
+
+        UiTextField {
+            label: "Screenshot name pattern"
+            hint: "strftime tokens, e.g. %Y-%m-%d_%H-%M-%S."
+            configKey: "captureScreenshotNamePattern"
+            placeholder: "Screenshot_%Y-%m-%d_%H-%M-%S"
+            fieldWidth: 280
+        }
+
+        UiTextField {
+            label: "Recording name pattern"
+            configKey: "captureVideoNamePattern"
+            placeholder: "Recording_%Y-%m-%d_%H-%M-%S"
+            fieldWidth: 280
+        }
+    }
+
+    UiCard {
+        width: parent.width
         title: "Behaviour"
 
         UiSwitch {

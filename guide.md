@@ -15,6 +15,7 @@ This file is only the map.
 | Build, install, run tests, debug | [docs/08-build-install-test.md](docs/08-build-install-test.md) |
 | Copy-paste recipes for common changes | [docs/09-recipes.md](docs/09-recipes.md) |
 | Know which files are dead code (a lot of them are) | [docs/10-live-vs-legacy.md](docs/10-live-vs-legacy.md) |
+| Look up every config key the settings app writes | [docs/11-settings-reference.md](docs/11-settings-reference.md) |
 
 ## 60-second orientation
 

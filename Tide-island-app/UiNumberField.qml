@@ -46,7 +46,7 @@ Item {
             text: root.label
             color: AppTheme.text
             font.family: AppTheme.fontFamily
-            font.pixelSize: 13
+            font.pixelSize: AppTheme.fontSizeBody
         }
 
         Text {
@@ -56,7 +56,7 @@ Item {
             color: AppTheme.textFaint
             wrapMode: Text.WordWrap
             font.family: AppTheme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: AppTheme.fontSizeCaption
         }
     }
 
@@ -81,17 +81,17 @@ Item {
             color: AppTheme.text
             horizontalAlignment: TextInput.AlignHCenter
             font.family: AppTheme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: AppTheme.fontSizeCaption
             selectByMouse: true
             inputMethodHints: Qt.ImhDigitsOnly
             validator: IntValidator { bottom: root.minimum; top: root.maximum }
             text: String(root.currentValue)
 
             background: Rectangle {
-                radius: 8
-                color: AppTheme.dark ? "#101014" : "#f5f5f8"
+                radius: AppTheme.radiusChip - 2
+                color: AppTheme.chip
                 border.width: 1
-                border.color: field.activeFocus ? AppTheme.accent : AppTheme.cardBorder
+                border.color: field.activeFocus ? AppTheme.accentActive : AppTheme.glassBorder
             }
 
             onEditingFinished: root.commit(field.text)
@@ -103,7 +103,7 @@ Item {
             text: root.suffix
             color: AppTheme.textFaint
             font.family: AppTheme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: AppTheme.fontSizeCaption
         }
 
         UiButton {

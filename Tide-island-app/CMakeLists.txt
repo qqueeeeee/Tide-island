@@ -82,6 +82,13 @@ qt_add_qml_module(tide-island-config-app
         PageWallpaper.qml
         PageShortcuts.qml
         PageAbout.qml
+        PageMotion.qml
+        PageActivities.qml
+        PageNotifications.qml
+        PageGeneral.qml
+        UiOrderList.qml
+        UiTagList.qml
+        UiTimeField.qml
 )
 
 install(TARGETS tide-island-config-app

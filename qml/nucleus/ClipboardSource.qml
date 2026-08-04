@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell.Io
+import IslandBackend
 
 // Clipboard history bridge on top of `cliphist` (the standard Hyprland clipboard
 // daemon). It keeps the parsed entries as a plain JS array so the layer can
@@ -11,9 +12,32 @@ import Quickshell.Io
 Item {
     id: root
 
+    readonly property var userConfig: UserConfig
+
     property var entries: []
     readonly property int count: root.entries.length
     property bool available: true
+
+    readonly property int historyLimit: Math.max(5, Math.min(500, userConfig.clipboardHistoryLimit))
+    readonly property bool showImagePreviews: userConfig.clipboardShowImagePreviews
+    readonly property var excludedApps: {
+        const list = userConfig.clipboardExcludedApps || [];
+        const out = [];
+        for (let i = 0; i < list.length; i++)
+            out.push(String(list[i]).toLowerCase());
+        return out;
+    }
+
+    function isAppExcluded(meta) {
+        const value = String(meta === undefined || meta === null ? "" : meta).toLowerCase();
+        if (value === "" || root.excludedApps.length === 0)
+            return false;
+        for (let i = 0; i < root.excludedApps.length; i++) {
+            if (value.indexOf(root.excludedApps[i]) !== -1)
+                return true;
+        }
+        return false;
+    }
 
     visible: false
     width: 0
@@ -115,10 +139,15 @@ Item {
 
             const parsed = [];
             const lines = listProcess.buffer.split("\n");
-            for (let index = 0; index < lines.length && parsed.length < 60; index++) {
+            for (let index = 0; index < lines.length && parsed.length < root.historyLimit; index++) {
                 const entry = root.parseLine(lines[index]);
-                if (entry)
-                    parsed.push(entry);
+                if (!entry)
+                    continue;
+                if (entry.kind === "image" && !root.showImagePreviews)
+                    continue;
+                if (root.isAppExcluded(entry.meta))
+                    continue;
+                parsed.push(entry);
             }
             root.entries = parsed;
         }

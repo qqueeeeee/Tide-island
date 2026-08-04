@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell.Services.Notifications
+import IslandBackend
 
 // Notification feed for the island. Wraps Quickshell's freedesktop notification
 // server and exposes a flat JS array shaped like the React `NotifyItem`:
@@ -9,9 +10,66 @@ import Quickshell.Services.Notifications
 Item {
     id: root
 
+    readonly property var userConfig: UserConfig
+
     property var items: []
     property bool dnd: false
     readonly property int count: root.items.length
+
+    readonly property int historyLimit: Math.max(5, Math.min(200, userConfig.notificationsHistoryLimit))
+
+    function normalizedList(raw) {
+        const list = raw || [];
+        const out = [];
+        for (let i = 0; i < list.length; i++)
+            out.push(String(list[i]).toLowerCase());
+        return out;
+    }
+
+    readonly property var blockedApps: root.normalizedList(userConfig.notificationsBlockedApps)
+    readonly property var allowedApps: root.normalizedList(userConfig.notificationsAllowedApps)
+
+    function isAppAllowed(appName) {
+        const name = String(appName === undefined || appName === null ? "" : appName).toLowerCase();
+        for (let i = 0; i < root.blockedApps.length; i++) {
+            if (name.indexOf(root.blockedApps[i]) !== -1)
+                return false;
+        }
+        if (root.allowedApps.length === 0)
+            return true;
+        for (let i = 0; i < root.allowedApps.length; i++) {
+            if (name.indexOf(root.allowedApps[i]) !== -1)
+                return true;
+        }
+        return false;
+    }
+
+    function parseTimeOfDay(value) {
+        const text = String(value === undefined || value === null ? "" : value);
+        const match = text.match(/^(\d{1,2}):(\d{2})$/);
+        if (!match)
+            return -1;
+        return (parseInt(match[1], 10) * 60) + parseInt(match[2], 10);
+    }
+
+    readonly property bool withinDndSchedule: {
+        if (!userConfig.dndScheduleEnabled)
+            return false;
+        const start = root.parseTimeOfDay(userConfig.dndStartTime);
+        const end = root.parseTimeOfDay(userConfig.dndEndTime);
+        if (start < 0 || end < 0)
+            return false;
+        const now = new Date();
+        const minutes = now.getHours() * 60 + now.getMinutes();
+        if (start === end)
+            return false;
+        if (start < end)
+            return minutes >= start && minutes < end;
+        // Wraps past midnight, e.g. 22:00 -> 08:00.
+        return minutes >= start || minutes < end;
+    }
+
+    readonly property bool effectiveDnd: userConfig.doNotDisturbEnabled || root.withinDndSchedule
 
     signal received(var item)
 
@@ -30,13 +88,29 @@ Item {
         keepOnReload: false
 
         onNotification: (notification) => {
+            if (!root.isAppAllowed(notification.appName)) {
+                notification.dismiss();
+                return;
+            }
+
             notification.tracked = true;
 
             const item = root.describe(notification);
-            root.items = [item].concat(root.items).slice(0, 40);
+            root.items = [item].concat(root.items).slice(0, root.historyLimit);
             if (!root.dnd)
                 root.received(item);
         }
+    }
+
+    onEffectiveDndChanged: root.dnd = root.effectiveDnd
+    Component.onCompleted: root.dnd = root.effectiveDnd
+
+    Timer {
+        // Reevaluate the DND schedule window periodically.
+        interval: 30000
+        running: userConfig.dndScheduleEnabled
+        repeat: true
+        onTriggered: root.dnd = root.effectiveDnd
     }
 
     Timer {

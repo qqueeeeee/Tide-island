@@ -1,6 +1,9 @@
 import QtQuick
 import TideIsland 1.0
 
+// Island-style pill toggle (same silhouette as the control-centre circle
+// buttons, flattened into a switch). API unchanged: label/hint/configKey,
+// `toggled(bool)` signal.
 Item {
     id: root
 
@@ -18,7 +21,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         anchors.margins: -6
-        radius: AppTheme.radiusControl
+        radius: AppTheme.radiusChip
         color: hover.hovered ? AppTheme.rowHover : "transparent"
 
         Behavior on color { ColorAnimation { duration: AppTheme.animation } }
@@ -39,7 +42,7 @@ Item {
             text: root.label
             color: AppTheme.text
             font.family: AppTheme.fontFamily
-            font.pixelSize: 13
+            font.pixelSize: AppTheme.fontSizeBody
         }
 
         Text {
@@ -49,7 +52,7 @@ Item {
             color: AppTheme.textFaint
             wrapMode: Text.WordWrap
             font.family: AppTheme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: AppTheme.fontSizeCaption
         }
     }
 
@@ -58,17 +61,19 @@ Item {
 
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
-        width: 44
-        height: 26
-        radius: 13
-        color: root.checked ? "#30d158" : AppTheme.trackOff
+        width: 46
+        height: 27
+        radius: height / 2
+        color: root.checked ? AppTheme.accentActive : AppTheme.trackOff
+        border.width: 1
+        border.color: root.checked ? "transparent" : AppTheme.glassBorder
 
         Behavior on color { ColorAnimation { duration: AppTheme.animation } }
 
         Rectangle {
-            width: 22
-            height: 22
-            radius: 11
+            width: 23
+            height: 23
+            radius: 11.5
             y: 2
             x: root.checked ? track.width - width - 2 : 2
             color: "#ffffff"

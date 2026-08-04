@@ -3,7 +3,8 @@ import TideIsland 1.0
 
 // Live miniature of the top strip: wallpaper-ish backdrop, the island capsule
 // at the configured margin/scale/radius, bar items at the configured gaps and
-// the reserved window gap drawn underneath.
+// the reserved window gap drawn underneath. Framed like a glass chip so it
+// reads as part of the island's own material.
 Rectangle {
     id: root
 
@@ -22,7 +23,7 @@ Rectangle {
     radius: AppTheme.radiusCard
     color: AppTheme.previewBg
     border.width: 1
-    border.color: AppTheme.cardBorder
+    border.color: AppTheme.glassBorder
     clip: true
 
     // Wallpaper glow so the black capsule reads as floating.
@@ -45,7 +46,7 @@ Rectangle {
             ? root.topMargin + root.capsuleHeight + root.bottomGap
             : root.topMargin
         height: parent.height - y - 10
-        radius: 10
+        radius: AppTheme.radiusChip
         color: "#ffffff"
         opacity: 0.14
 
@@ -55,7 +56,7 @@ Rectangle {
             color: "#ffffff"
             opacity: 0.7
             font.family: AppTheme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: AppTheme.fontSizeCaption
         }
     }
 
@@ -90,7 +91,7 @@ Rectangle {
             text: "Ghostty"
             color: "#ffffff"
             font.family: AppTheme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: AppTheme.fontSizeCaption
         }
     }
 
@@ -107,7 +108,7 @@ Rectangle {
             text: "84%"
             color: "#ffffff"
             font.family: AppTheme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: AppTheme.fontSizeCaption
         }
 
         Text {
@@ -116,7 +117,7 @@ Rectangle {
             text: ConfigStore.text("clockFormat") === "24" ? "21:41" : "9:41"
             color: "#ffffff"
             font.family: AppTheme.fontFamily
-            font.pixelSize: 12
+            font.pixelSize: AppTheme.fontSizeCaption
             font.weight: Font.DemiBold
         }
     }
@@ -153,6 +154,6 @@ Rectangle {
         color: "#ffffff"
         opacity: 0.55
         font.family: AppTheme.fontFamily
-        font.pixelSize: 11
+        font.pixelSize: AppTheme.fontSizeMicro
     }
 }
